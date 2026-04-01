@@ -3,7 +3,10 @@
 
 base local phone db structure
 
-state: normal_open|order_reminder|first_open
+app_state: normal_open|notification|first_open|
+login_status: logged|logout
+auth_type: local|account
+token: null
 device_id:string
 user_id:string
 email: 

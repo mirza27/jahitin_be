@@ -5,6 +5,7 @@ import "github.com/spf13/viper"
 type Config struct {
 	AppName    string `mapstructure:"APP_NAME"`
 	AppVersion string `mapstructure:"APP_VERSION" `
+	AppPort    int    `mapstructure:"APP_PORT"`
 	Debug      bool   `mapstructure:"DEBUG"`
 	DBHost     string `mapstructure:"DB_HOST"`
 	DBPort     int    `mapstructure:"DB_PORT"`
