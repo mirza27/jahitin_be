@@ -1,4 +1,4 @@
-package server
+package api
 
 type Server struct {
 	config *Config

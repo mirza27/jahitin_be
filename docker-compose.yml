@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: jahitin_db
+    ports:
+      - "${DB_PORT}:5432"
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - jahitin_db_data:/var/lib/postgresql/data
+    networks:
+      - jahitin_network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jahitin_api
+    depends_on:
+      - db
+    networks:
+      - jahitin_network
+
+volumes:
+  jahitin_db_data:
+    name: jahitin_db_data
+    external: true
+
+networks:
+  jahitin_network:
+    name: jahitin_network
+    external: true
