@@ -1,0 +1,13 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "./database/query/"
+    schema: "./database/migration/"
+    gen:
+      go:
+        package: "jahitin_be_db"
+        sql_package: "database/sql"
+        out: "./database/repository/"
+        emit_json_tags: true
+        emit_interface: true
+        emit_empty_slices: true
