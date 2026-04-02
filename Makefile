@@ -20,3 +20,9 @@ seed:
 
 sqlc:
 	sqlc generate
+
+api:
+	go run main.go
+
+
+.PHONY: api

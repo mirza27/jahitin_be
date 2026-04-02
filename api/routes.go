@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (s *Server) SetupRoutes() {
+func (s *ApiServer) SetupRoutes() {
 
 	router := gin.Default()
 	h := handler.NewHandler(s.store)

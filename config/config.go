@@ -1,6 +1,10 @@
 package config
 
-import "github.com/spf13/viper"
+import (
+	"path/filepath"
+
+	"github.com/spf13/viper"
+)
 
 type Config struct {
 	AppName    string `mapstructure:"APP_NAME"`
@@ -15,19 +19,24 @@ type Config struct {
 }
 
 func LoadConfig(path string) (config *Config, err error) {
+	v := viper.New()
 
-	viper.AddConfigPath(path)
-	viper.SetConfigName("dev")
-	viper.SetConfigType("env")
+	v.SetConfigFile(filepath.Join(path, ".env"))
+	v.SetConfigType("env")
+	v.AutomaticEnv()
 
-	viper.AutomaticEnv()
-
-	err = viper.ReadInConfig()
+	err = v.ReadInConfig()
 	if err != nil {
 		return
 	}
 
-	err = viper.Unmarshal(&config)
+	var cfg Config
+	err = v.Unmarshal(&cfg)
+	if err != nil {
+		return
+	}
+
+	config = &cfg
 	return
 
 }

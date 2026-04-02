@@ -8,14 +8,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type Server struct {
+type ApiServer struct {
 	config config.Config
 	store  db.Store
 	router *gin.Engine
 }
 
-func NewServer(c config.Config, store db.Store) (*Server, error) {
-	server := &Server{
+func NewApiServer(c config.Config, store db.Store) (*ApiServer, error) {
+	server := &ApiServer{
 		config: c,
 		store:  store,
 	}
@@ -25,7 +25,7 @@ func NewServer(c config.Config, store db.Store) (*Server, error) {
 	return server, nil
 }
 
-func (s *Server) Start() error {
+func (s *ApiServer) Start() error {
 	address := "0.0.0.0:" + strconv.Itoa(s.config.AppPort)
 
 	return s.router.Run(address)
