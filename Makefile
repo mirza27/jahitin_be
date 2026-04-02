@@ -15,5 +15,8 @@ sqlc:
 server:
 	go run main.go
 
+seed:
+	go run ./cmd/seed
+
 sqlc:
 	sqlc generate
