@@ -9,12 +9,12 @@ import (
 func (s *ApiServer) SetupRoutes() {
 
 	router := gin.Default()
-	h := handler.NewHandler(s.store)
+	h := handler.NewHandler(s.store, s.tokenmaker)
 
 	// auth
 	router.GET("/auth/session", h.Auth.Session)
-	router.POST("/auth/session/create", h.Auth.CreateSession)
-	router.POST("/auth/login", h.Auth.Login)
+	router.POST("/auth/login/local", h.Auth.LoginLocal)
+	router.POST("/auth/login/account", h.Auth.LoginAccount)
 
 	// user
 	router.POST("/user/register/local", h.User.CreateUserLocal)

@@ -37,9 +37,6 @@ func (h *UserHandler) CreateUserLocal(c *gin.Context) {
 		DeviceID: req.DeviceID,
 	})
 
-	// generate token
-	// token, err
-
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
 		return

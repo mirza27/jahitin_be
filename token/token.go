@@ -13,8 +13,10 @@ import (
 )
 
 const (
-	AuthTypeLocal   = "local"
-	AuthTypeAccount = "account"
+	AuthTypeLocal        = "local"
+	AuthTypeAccount      = "account"
+	LocalTokenDuration   = 24 * time.Hour
+	AccountTokenDuration = 7 * 24 * time.Hour
 )
 
 var (
@@ -61,7 +63,17 @@ func NewPayload(userID int64, name string, authType string, deviceID string, use
 	}, nil
 }
 
-func (m *Maker) CreateToken(userID int64, name string, authType string, deviceID string, username string, email string, duration time.Duration) (string, *Payload, error) {
+func (m *Maker) CreateToken(userID int64, name string, authType string, deviceID string, username string, email string) (string, *Payload, error) {
+	var duration time.Duration
+	switch authType {
+	case AuthTypeLocal:
+		duration = LocalTokenDuration
+	case AuthTypeAccount:
+		duration = AccountTokenDuration
+	default:
+		return "", nil, ErrInvalidAuthType
+	}
+
 	expiredAt := time.Now().Add(duration).Unix()
 
 	payload, err := NewPayload(userID, name, authType, deviceID, username, email, expiredAt)

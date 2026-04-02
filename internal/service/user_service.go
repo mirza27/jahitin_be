@@ -29,11 +29,11 @@ func (s *userService) CreateNewLocal(ctx context.Context, input CreateLocalUserI
 	// create base user
 	params := db.CreateUserParams{
 		Name:         input.Name,
-		Username:     sql.NullString{},
-		Email:        sql.NullString{},
-		PasswordHash: sql.NullString{},
+		Username:     sql.NullString{Valid: false},
+		Email:        sql.NullString{Valid: false},
+		PasswordHash: sql.NullString{Valid: false},
 		DeviceID:     sql.NullString{String: input.DeviceID, Valid: true},
-		Phone:        sql.NullString{},
+		Phone:        sql.NullString{Valid: false},
 		UserType:     "tailor",
 	}
 
