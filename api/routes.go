@@ -16,6 +16,10 @@ func (s *ApiServer) SetupRoutes() {
 	router.POST("/auth/session/create", h.Auth.CreateSession)
 	router.POST("/auth/login", h.Auth.Login)
 
+	// user
+	router.POST("/user/register/local", h.User.CreateUserLocal)
+	router.POST("/user/register/account", h.User.CreateUserAccount)
+
 	// categories
 	router.GET("/category/list", h.Order.ListCategories)
 
@@ -24,10 +28,6 @@ func (s *ApiServer) SetupRoutes() {
 
 	// middleware for session
 	authRoutes := router.Group("/").Use()
-
-	// user
-	authRoutes.POST("/user/register/account", h.User.CreateUserAccount)
-	authRoutes.POST("/user/register/local", h.User.CreateUserLocal)
 
 	// order
 	authRoutes.POST("/order/create", h.Order.CreateOrder)
