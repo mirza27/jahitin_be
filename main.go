@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"jahitin_be/api"
 	"jahitin_be/config"
+	"jahitin_be/token"
 	"log"
 
 	db "jahitin_be/database/repository"
@@ -35,7 +36,13 @@ func main() {
 
 	store := db.New(dbConn)
 
-	server, err := api.NewApiServer(*config, store)
+	// token maker object
+	tokenMaker, err := token.NewMaker(config.TokenSecretKey)
+	if err != nil {
+		log.Fatalf("failed to create token maker: %v", err)
+	}
+
+	server, err := api.NewApiServer(*config, store, *tokenMaker)
 	if err != nil {
 		log.Fatalf("failed to create server: %v", err)
 	}

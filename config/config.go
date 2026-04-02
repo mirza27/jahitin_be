@@ -7,15 +7,16 @@ import (
 )
 
 type Config struct {
-	AppName    string `mapstructure:"APP_NAME"`
-	AppVersion string `mapstructure:"APP_VERSION" `
-	AppPort    int    `mapstructure:"APP_PORT"`
-	Debug      bool   `mapstructure:"DEBUG"`
-	DBHost     string `mapstructure:"DB_HOST"`
-	DBPort     int    `mapstructure:"DB_PORT"`
-	DBUser     string `mapstructure:"DB_USER"`
-	DBPassword string `mapstructure:"DB_PASSWORD"`
-	DBName     string `mapstructure:"DB_NAME"`
+	AppName        string `mapstructure:"APP_NAME"`
+	AppVersion     string `mapstructure:"APP_VERSION" `
+	AppPort        int    `mapstructure:"APP_PORT"`
+	Debug          bool   `mapstructure:"DEBUG"`
+	DBHost         string `mapstructure:"DB_HOST"`
+	DBPort         int    `mapstructure:"DB_PORT"`
+	DBUser         string `mapstructure:"DB_USER"`
+	DBPassword     string `mapstructure:"DB_PASSWORD"`
+	DBName         string `mapstructure:"DB_NAME"`
+	TokenSecretKey string `mapstructure:"TOKEN_SECRET_KEY"`
 }
 
 func LoadConfig(path string) (config *Config, err error) {
