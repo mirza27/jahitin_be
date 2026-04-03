@@ -10,6 +10,8 @@ import (
 
 type AuthService interface {
 	CreateLocalSession(ctx context.Context, deviceID string) (string, *token.Payload, error)
+	GetSession(ctx context.Context, user_id int64) bool
+	CreateAccountSession(user_id int64)
 }
 
 type authService struct {
@@ -19,6 +21,19 @@ type authService struct {
 
 func NewAuthService(store db.Store, tokenMaker token.Maker) AuthService {
 	return &authService{store: store, tokenMaker: tokenMaker}
+}
+
+func (s *authService) GetSession(ctx context.Context, user_id int64) bool {
+
+	_, err := s.store.GetUserByID(ctx, user_id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false
+		}
+		return false
+	}
+
+	return true
 }
 
 func (s *authService) CreateLocalSession(ctx context.Context, deviceID string) (string, *token.Payload, error) {

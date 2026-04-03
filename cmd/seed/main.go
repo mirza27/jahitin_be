@@ -3,16 +3,16 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
-	"os"
-	"strconv"
 	"time"
 
 	"jahitin_be/config"
 	db "jahitin_be/database/repository"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/spf13/viper"
 )
 
 func main() {
@@ -53,29 +53,32 @@ func main() {
 }
 
 func loadConfig() *config.Config {
-	cfg, err := config.LoadConfig(".")
-	if err == nil {
-		return cfg
+	v := viper.New()
+	v.SetConfigFile(".env")
+	v.SetConfigType("env")
+	v.AutomaticEnv()
+
+	v.SetDefault("DB_HOST", "localhost")
+	v.SetDefault("DB_PORT", 5400)
+	v.SetDefault("DB_USER", "postgres")
+	v.SetDefault("DB_PASSWORD", "da7sduhasd")
+	v.SetDefault("DB_NAME", "jahitin_db")
+
+	if err := v.ReadInConfig(); err != nil {
+		var configFileNotFound viper.ConfigFileNotFoundError
+		if !errors.As(err, &configFileNotFound) {
+			log.Printf("warning: unable to read .env config: %v", err)
+		}
 	}
 
-	port, convErr := strconv.Atoi(defaultValue(os.Getenv("DB_PORT"), "5400"))
-	if convErr != nil {
-		port = 5400
+	var cfg config.Config
+	if err := v.Unmarshal(&cfg); err != nil {
+		log.Printf("warning: unable to unmarshal config, using defaults/env values: %v", err)
 	}
 
-	return &config.Config{
-		DBHost:     defaultValue(os.Getenv("DB_HOST"), "localhost"),
-		DBPort:     port,
-		DBUser:     defaultValue(os.Getenv("DB_USER"), "postgres"),
-		DBPassword: defaultValue(os.Getenv("DB_PASSWORD"), "da7sduhasd"),
-		DBName:     defaultValue(os.Getenv("DB_NAME"), "jahitin_db"),
-	}
-}
-
-func defaultValue(value, fallback string) string {
-	if value == "" {
-		return fallback
+	if cfg.DBPort == 0 {
+		cfg.DBPort = v.GetInt("DB_PORT")
 	}
 
-	return value
+	return &cfg
 }

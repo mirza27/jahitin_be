@@ -41,6 +41,7 @@ func (s *ApiServer) AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		// verify token
 		headerToken := fields[1]
 		payload, err := tokenMaker.VerifyToken(headerToken)
 		if err != nil {
@@ -49,7 +50,7 @@ func (s *ApiServer) AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		ctx.Set("authorization_payload", payload)
+		ctx.Set(authorizationPayloadKey, payload)
 		ctx.Next()
 	}
 

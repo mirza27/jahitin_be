@@ -19,7 +19,7 @@ func NewHandler(store db.Store, token token.Maker) *Handler {
 
 	return &Handler{
 		User:  NewUserHandler(store, userService),
-		Auth:  NewAuthHandler(store, authService),
+		Auth:  NewAuthHandler(store, authService, token),
 		Order: NewOrderHandler(store, orderService),
 	}
 }

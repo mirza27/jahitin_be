@@ -10,11 +10,14 @@ func (s *ApiServer) SetupRoutes() {
 
 	router := gin.Default()
 	h := handler.NewHandler(s.store, s.tokenmaker)
+	authRoutes := router.Group("/", s.AuthMiddleware())
 
 	// auth
-	router.GET("/auth/session", h.Auth.Session)
 	router.POST("/auth/login/local", h.Auth.LoginLocal)
 	router.POST("/auth/login/account", h.Auth.LoginAccount)
+
+	// session
+	authRoutes.GET("/auth/session", h.Auth.Session)
 
 	// user
 	router.POST("/user/register/local", h.User.CreateUserLocal)
@@ -25,9 +28,6 @@ func (s *ApiServer) SetupRoutes() {
 
 	// services
 	router.GET("/service/list", h.Order.ListServices)
-
-	// middleware for session
-	authRoutes := router.Group("/").Use()
 
 	// order
 	authRoutes.POST("/order/create", h.Order.CreateOrder)

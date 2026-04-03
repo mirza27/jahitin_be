@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"database/sql"
 	"net/http"
 
 	db "jahitin_be/database/repository"
@@ -20,7 +21,17 @@ func NewUserHandler(store db.Store, userService service.UserService) *UserHandle
 
 type CreateUserLocalRequest struct {
 	Name     string `json:"name" binding:"required"`
-	DeviceID string `json:"device_id" binding:"required,string"`
+	DeviceID string `json:"device_id" binding:"required"`
+}
+
+type CreateUserResponse struct {
+	ID       int64  `json:"id"`
+	Name     string `json:"name"`
+	DeviceID string `json:"device_id"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Phone    string `json:"phone"`
+	UserType string `json:"user_type"`
 }
 
 func (h *UserHandler) CreateUserLocal(c *gin.Context) {
@@ -42,7 +53,17 @@ func (h *UserHandler) CreateUserLocal(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"data": user})
+	userResponse := CreateUserResponse{
+		ID:       user.ID,
+		Name:     user.Name,
+		DeviceID: user.DeviceID.String,
+		UserType: user.UserType,
+		Username: nullStringValue(user.Username),
+		Email:    nullStringValue(user.Email),
+		Phone:    nullStringValue(user.Phone),
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"data": userResponse})
 }
 
 func (h *UserHandler) CreateUserAccount(c *gin.Context) {
@@ -52,4 +73,11 @@ func (h *UserHandler) CreateUserAccount(c *gin.Context) {
 func (h *UserHandler) ListCustomers(c *gin.Context) {
 	c.JSON(http.StatusNotImplemented, gin.H{"message": "not implemented"})
 
+}
+
+func nullStringValue(s sql.NullString) string {
+	if s.Valid {
+		return s.String
+	}
+	return ""
 }

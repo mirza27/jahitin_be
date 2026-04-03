@@ -2,28 +2,71 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
+	"time"
 
 	db "jahitin_be/database/repository"
 	"jahitin_be/internal/service"
+	"jahitin_be/token"
 
 	"github.com/gin-gonic/gin"
 )
 
 type AuthHandler struct {
-	store   db.Store
-	service service.AuthService
+	store     db.Store
+	service   service.AuthService
+	tokenMake token.Maker
 }
 
-func NewAuthHandler(store db.Store, authService service.AuthService) *AuthHandler {
-	return &AuthHandler{store: store, service: authService}
+func NewAuthHandler(store db.Store, authService service.AuthService, tokenMake token.Maker) *AuthHandler {
+	return &AuthHandler{store: store, service: authService, tokenMake: tokenMake}
+}
+
+type SessionResponse struct {
+	UserId    string    `json:"user_id"`
+	Name      string    `json:"name"`
+	Username  string    `json:"username"`
+	Email     string    `json:"email"`
+	Phone     string    `json:"phone"`
+	UserType  string    `json:"user_type"`
+	ExpiredAt time.Time `json:"expired_at"`
 }
 
 func (h *AuthHandler) Session(c *gin.Context) {
-	c.JSON(http.StatusNotImplemented, gin.H{"message": "not implemented"})
+	payloadValue, exists := c.Get("authorization_payload")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing authorization payload"})
+		return
+	}
+
+	authPayload, ok := payloadValue.(*token.Payload)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid authorization payload"})
+		return
+	}
+
+	isValid := h.service.GetSession(c.Request.Context(), authPayload.UserID)
+	if !isValid {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+		return
+	}
+
+	response := SessionResponse{
+		UserId:    strconv.FormatInt(authPayload.UserID, 10),
+		Name:      authPayload.Name,
+		Username:  authPayload.Username,
+		Email:     authPayload.Email,
+		ExpiredAt: time.Unix(authPayload.ExpiredAt, 0),
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": response})
 }
 
 type LoginLocalRequest struct {
-	DeviceID string `json:"device_id" binding:"required,string"`
+	DeviceID string `json:"device_id" binding:"required"`
+}
+type LoginResponse struct {
+	Token string `json:"token"`
 }
 
 func (h *AuthHandler) LoginLocal(c *gin.Context) {
@@ -40,7 +83,7 @@ func (h *AuthHandler) LoginLocal(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": token})
+	c.JSON(http.StatusOK, gin.H{"data": LoginResponse{Token: token}})
 
 }
 
