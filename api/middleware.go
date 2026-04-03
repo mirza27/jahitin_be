@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"errors"
 	"net/http"
 	"strings"
@@ -48,6 +49,16 @@ func (s *ApiServer) AuthMiddleware() gin.HandlerFunc {
 			err := errors.New("invalid authorization token")
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			return
+		}
+
+		// check if user exist
+		_, err = s.store.GetUserByID(ctx, payload.UserID)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				err := errors.New("user not found")
+				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+				return
+			}
 		}
 
 		ctx.Set(authorizationPayloadKey, payload)

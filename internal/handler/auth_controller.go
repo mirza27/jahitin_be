@@ -33,17 +33,8 @@ type SessionResponse struct {
 }
 
 func (h *AuthHandler) Session(c *gin.Context) {
-	payloadValue, exists := c.Get("authorization_payload")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing authorization payload"})
-		return
-	}
 
-	authPayload, ok := payloadValue.(*token.Payload)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid authorization payload"})
-		return
-	}
+	authPayload := c.MustGet("authorization_payload").(*token.Payload)
 
 	isValid := h.service.GetSession(c.Request.Context(), authPayload.UserID)
 	if !isValid {
