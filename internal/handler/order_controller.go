@@ -136,23 +136,3 @@ func (h *OrderHandler) UpdateOrder(c *gin.Context) {
 func (h *OrderHandler) DeleteOrder(c *gin.Context) {
 	c.JSON(http.StatusNotImplemented, gin.H{"message": "not implemented"})
 }
-
-func (h *OrderHandler) ListCategories(c *gin.Context) {
-	categories, err := h.store.ListClothesCategories(c.Request.Context())
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch categories"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": categories})
-}
-
-func (h *OrderHandler) ListServices(c *gin.Context) {
-	serviceTypes, err := h.store.ListServiceTypes(c.Request.Context())
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch service types"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": serviceTypes})
-}

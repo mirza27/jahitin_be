@@ -16,7 +16,7 @@ func NewServiceTypeHandler(store db.Store, service service.ServiceTypeService) *
 	return &ServiceTypeHandler{store: store, service: service}
 }
 
-func (h *ServiceTypeHandler) ListAllServiceTypes(c *gin.Context) {
+func (h *ServiceTypeHandler) ListAllServiceTypesHandler(c *gin.Context) {
 
 	services, err := h.service.ListServiceTypes(c.Request.Context())
 	if err != nil {
