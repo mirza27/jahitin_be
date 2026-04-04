@@ -10,6 +10,7 @@ import (
 
 type OrderService interface {
 	CreateUserOrder(ctx context.Context, user_id int64, o_data CreateUserOrderInput, c_data CustomerInput) (bool, error)
+	ListUserOrders(ctx context.Context, filter ListOrdersFilter) ([]*ListOrdersOutput, error)
 }
 
 type orderService struct {
@@ -83,7 +84,7 @@ func (o *orderService) CreateUserOrder(ctx context.Context, user_id int64, o_dat
 			UserID:     user_id,
 			CustomerID: customerID,
 			Name:       o_data.Name,
-			Deadline:   sql.NullTime{Time: timeOrZero(o_data.Deadline), Valid: o_data.Deadline != nil},
+			Deadline:   sql.NullTime{Time: TimeOrZero(o_data.Deadline), Valid: o_data.Deadline != nil},
 		}
 
 		order, err := q.CreateOrder(ctx, oParam)
@@ -144,10 +145,102 @@ func (o *orderService) saveCustomerOrderNotes(ctx context.Context, q db.Querier,
 	return nil
 }
 
-func timeOrZero(value *time.Time) time.Time {
-	if value == nil {
-		return time.Time{}
+type ListOrdersFilter struct {
+	UserID int64
+	Status string
+	Search string
+	Page   int
+	Limit  int
+}
+
+type ListOrdersOutput struct {
+	OrderID      int64
+	Name         string
+	Deadline     *time.Time
+	CustomerName string
+	Status       string
+	Items        []OrderItemOutput
+}
+
+type OrderItemOutput struct {
+	ClothesFor        string
+	ClothesCategoryID int64
+	ServiceTypeID     int64
+	CustomServiceName string
+	Price             int64
+	Status            string
+}
+
+func (o *orderService) ListUserOrders(ctx context.Context, filter ListOrdersFilter) ([]*ListOrdersOutput, error) {
+
+	var orders []db.ListUserOrdersFilteredRow
+	var err error
+
+	// get headers order
+	orders, err = o.store.ListUserOrdersFiltered(ctx, db.ListUserOrdersFilteredParams{
+		UserID:  filter.UserID,
+		Column2: filter.Status,
+		Column3: filter.Search,
+		Limit:   int32(filter.Limit),
+		Offset:  int32((filter.Page - 1) * filter.Limit),
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	return *value
+	// get detail order items
+	orderIDs := make([]int32, len(orders))
+	for i, order := range orders {
+		orderIDs[i] = int32(order.ID)
+	}
+
+	// get orderItems by orderIDs
+	orderItems, err := o.store.ListOrderItemsByMultipleOrderIDs(ctx, orderIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	// combine order with order items
+	combinedOrders := o.CombineOrdersWithItems(orders, orderItems)
+
+	return combinedOrders, nil
+}
+
+func (o *orderService) CombineOrdersWithItems(orders []db.ListUserOrdersFilteredRow, orderItems []db.OrderItem) []*ListOrdersOutput {
+
+	// create hashmap orderID -> order items
+	orderMap := make(map[int64][]OrderItemOutput)
+	for _, item := range orderItems {
+		orderMap[item.OrderID] = append(orderMap[item.OrderID], OrderItemOutput{
+			ClothesFor:        item.ClothesFor,
+			ClothesCategoryID: NullInt64Value(item.CategoryID),
+			ServiceTypeID:     NullInt64Value(item.ServiceTypeID),
+			CustomServiceName: NullStringValue(item.CustomServiceName),
+			Price:             item.Price,
+			Status:            item.Status,
+		})
+	}
+
+	combinedOrders := make([]*ListOrdersOutput, len(orders))
+
+	// each order, get hashmap order items by orderID
+	for i, order := range orders {
+		var deadline *time.Time
+		if order.Deadline.Valid {
+			t := order.Deadline.Time
+			deadline = &t
+		}
+
+		combinedOrders[i] = &ListOrdersOutput{
+			OrderID:      order.ID,
+			Name:         order.Name,
+			Deadline:     deadline,
+			CustomerName: order.CustomerName,
+			Status:       order.Status,
+			Items:        orderMap[order.ID],
+		}
+	}
+
+	return combinedOrders
+
 }

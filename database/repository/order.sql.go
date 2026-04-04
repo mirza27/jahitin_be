@@ -82,103 +82,58 @@ func (q *Queries) GetOrderDetailsByOrderID(ctx context.Context, id int64) (GetOr
 	return i, err
 }
 
-const listOrdersByUserId = `-- name: ListOrdersByUserId :many
-SELECT id, name, user_id, customer_id, deadline, status, sharing_code, updated_at, created_at, finished_at FROM orders
-WHERE user_id = $1
-ORDER BY created_at DESC
-LIMIT $2 OFFSET $3
-`
-
-type ListOrdersByUserIdParams struct {
-	UserID int64 `json:"user_id"`
-	Limit  int32 `json:"limit"`
-	Offset int32 `json:"offset"`
-}
-
-func (q *Queries) ListOrdersByUserId(ctx context.Context, arg ListOrdersByUserIdParams) ([]Order, error) {
-	rows, err := q.db.QueryContext(ctx, listOrdersByUserId, arg.UserID, arg.Limit, arg.Offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []Order{}
-	for rows.Next() {
-		var i Order
-		if err := rows.Scan(
-			&i.ID,
-			&i.Name,
-			&i.UserID,
-			&i.CustomerID,
-			&i.Deadline,
-			&i.Status,
-			&i.SharingCode,
-			&i.UpdatedAt,
-			&i.CreatedAt,
-			&i.FinishedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listOrdersHeaderByUserID = `-- name: ListOrdersHeaderByUserID :many
-SELECT o.id, o.name, o.user_id, o.customer_id, o.deadline, o.status, o.sharing_code, o.updated_at, o.created_at, o.finished_at, oi.id, oi.order_id, oi.category_id, oi.service_type_id, oi.clothes_for, oi.custom_service_name, oi.notes, oi.price, oi.status, oi.updated_at, oi.created_at, oi.finished_at, c.name AS customer_name FROM orders o
-JOIN order_items oi ON o.id = oi.order_id 
-JOIN customers c ON o.customer_id = c.id
+const listUserOrdersFiltered = `-- name: ListUserOrdersFiltered :many
+SELECT o.id, o.name, o.user_id, o.customer_id, o.deadline, o.status, o.sharing_code, o.updated_at, o.created_at, o.finished_at, c.name AS customer_name
+FROM orders o
+JOIN customers c ON c.id = o.customer_id
 WHERE o.user_id = $1
+  AND (NULLIF($2, '')::text IS NULL OR o.status = $2)
+  AND (
+    NULLIF($3, '')::text IS NULL OR
+    o.name ILIKE '%' || $3 || '%' OR
+    c.name ILIKE '%' || $3 || '%'
+  )
 ORDER BY o.created_at DESC
-LIMIT $2 OFFSET $3
+LIMIT $4 OFFSET $5
 `
 
-type ListOrdersHeaderByUserIDParams struct {
-	UserID int64 `json:"user_id"`
-	Limit  int32 `json:"limit"`
-	Offset int32 `json:"offset"`
+type ListUserOrdersFilteredParams struct {
+	UserID  int64       `json:"user_id"`
+	Column2 interface{} `json:"column_2"`
+	Column3 interface{} `json:"column_3"`
+	Limit   int32       `json:"limit"`
+	Offset  int32       `json:"offset"`
 }
 
-type ListOrdersHeaderByUserIDRow struct {
-	ID                int64          `json:"id"`
-	Name              string         `json:"name"`
-	UserID            int64          `json:"user_id"`
-	CustomerID        int64          `json:"customer_id"`
-	Deadline          sql.NullTime   `json:"deadline"`
-	Status            string         `json:"status"`
-	SharingCode       sql.NullString `json:"sharing_code"`
-	UpdatedAt         time.Time      `json:"updated_at"`
-	CreatedAt         time.Time      `json:"created_at"`
-	FinishedAt        sql.NullTime   `json:"finished_at"`
-	ID_2              int64          `json:"id_2"`
-	OrderID           int64          `json:"order_id"`
-	CategoryID        sql.NullInt64  `json:"category_id"`
-	ServiceTypeID     sql.NullInt64  `json:"service_type_id"`
-	ClothesFor        string         `json:"clothes_for"`
-	CustomServiceName sql.NullString `json:"custom_service_name"`
-	Notes             sql.NullString `json:"notes"`
-	Price             int64          `json:"price"`
-	Status_2          string         `json:"status_2"`
-	UpdatedAt_2       time.Time      `json:"updated_at_2"`
-	CreatedAt_2       time.Time      `json:"created_at_2"`
-	FinishedAt_2      sql.NullTime   `json:"finished_at_2"`
-	CustomerName      string         `json:"customer_name"`
+type ListUserOrdersFilteredRow struct {
+	ID           int64          `json:"id"`
+	Name         string         `json:"name"`
+	UserID       int64          `json:"user_id"`
+	CustomerID   int64          `json:"customer_id"`
+	Deadline     sql.NullTime   `json:"deadline"`
+	Status       string         `json:"status"`
+	SharingCode  sql.NullString `json:"sharing_code"`
+	UpdatedAt    time.Time      `json:"updated_at"`
+	CreatedAt    time.Time      `json:"created_at"`
+	FinishedAt   sql.NullTime   `json:"finished_at"`
+	CustomerName string         `json:"customer_name"`
 }
 
-func (q *Queries) ListOrdersHeaderByUserID(ctx context.Context, arg ListOrdersHeaderByUserIDParams) ([]ListOrdersHeaderByUserIDRow, error) {
-	rows, err := q.db.QueryContext(ctx, listOrdersHeaderByUserID, arg.UserID, arg.Limit, arg.Offset)
+func (q *Queries) ListUserOrdersFiltered(ctx context.Context, arg ListUserOrdersFilteredParams) ([]ListUserOrdersFilteredRow, error) {
+	rows, err := q.db.QueryContext(ctx, listUserOrdersFiltered,
+		arg.UserID,
+		arg.Column2,
+		arg.Column3,
+		arg.Limit,
+		arg.Offset,
+	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ListOrdersHeaderByUserIDRow{}
+	items := []ListUserOrdersFilteredRow{}
 	for rows.Next() {
-		var i ListOrdersHeaderByUserIDRow
+		var i ListUserOrdersFilteredRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
@@ -190,18 +145,6 @@ func (q *Queries) ListOrdersHeaderByUserID(ctx context.Context, arg ListOrdersHe
 			&i.UpdatedAt,
 			&i.CreatedAt,
 			&i.FinishedAt,
-			&i.ID_2,
-			&i.OrderID,
-			&i.CategoryID,
-			&i.ServiceTypeID,
-			&i.ClothesFor,
-			&i.CustomServiceName,
-			&i.Notes,
-			&i.Price,
-			&i.Status_2,
-			&i.UpdatedAt_2,
-			&i.CreatedAt_2,
-			&i.FinishedAt_2,
 			&i.CustomerName,
 		); err != nil {
 			return nil, err

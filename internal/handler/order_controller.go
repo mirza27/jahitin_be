@@ -107,22 +107,37 @@ func (h *OrderHandler) CreateOrderHandler(c *gin.Context) {
 }
 
 type ListOrdersRequest struct {
-	Status  string `form:"status" binding:"omitempty,oneof=pending in_progress completed"`
-	Search  string `form:"search" binding:"omitempty"`
-	SortBy  string `form:"sort_by" binding:"omitempty,oneof=created_at deadline"`
-	OrderBy string `form:"order_by" binding:"omitempty,oneof=asc desc"`
-	Page    int    `form:"page" binding:"omitempty,min=1"`
-	Limit   int    `form:"limit" binding:"omitempty,min=1,max=100"`
+	Status string `form:"status" binding:"omitempty,oneof=pending in_progress completed"`
+	Search string `form:"search" binding:"omitempty"`
+	Page   int    `form:"page" binding:"omitempty,min=1"`
+	Limit  int    `form:"limit" binding:"omitempty,min=1,max=100"`
 }
 
-func (h *OrderHandler) ListOrders(c *gin.Context) {
+func (h *OrderHandler) ListOrdersHandler(c *gin.Context) {
 	var req ListOrdersRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusNotImplemented, gin.H{"message": "not implemented"})
+	authPayload := c.MustGet("authorization_payload").(*token.Payload)
+	userID := authPayload.UserID
+
+	ordersFilter := service.ListOrdersFilter{
+		UserID: userID,
+		Status: req.Status,
+		Search: req.Search,
+		Page:   req.Page,
+		Limit:  req.Limit,
+	}
+
+	orders, err := h.service.ListUserOrders(c.Request.Context(), ordersFilter)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list orders", "details": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": orders})
 }
 
 func (h *OrderHandler) DetailOrder(c *gin.Context) {

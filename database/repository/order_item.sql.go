@@ -8,6 +8,8 @@ package jahitin_be_db
 import (
 	"context"
 	"database/sql"
+
+	"github.com/lib/pq"
 )
 
 const createOrderItem = `-- name: CreateOrderItem :one
@@ -56,6 +58,47 @@ func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams
 		&i.FinishedAt,
 	)
 	return i, err
+}
+
+const listOrderItemsByMultipleOrderIDs = `-- name: ListOrderItemsByMultipleOrderIDs :many
+SELECT id, order_id, category_id, service_type_id, clothes_for, custom_service_name, notes, price, status, updated_at, created_at, finished_at FROM order_items
+WHERE order_id = ANY($1::int[])
+`
+
+func (q *Queries) ListOrderItemsByMultipleOrderIDs(ctx context.Context, dollar_1 []int32) ([]OrderItem, error) {
+	rows, err := q.db.QueryContext(ctx, listOrderItemsByMultipleOrderIDs, pq.Array(dollar_1))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []OrderItem{}
+	for rows.Next() {
+		var i OrderItem
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrderID,
+			&i.CategoryID,
+			&i.ServiceTypeID,
+			&i.ClothesFor,
+			&i.CustomServiceName,
+			&i.Notes,
+			&i.Price,
+			&i.Status,
+			&i.UpdatedAt,
+			&i.CreatedAt,
+			&i.FinishedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listOrderItemsByOrderID = `-- name: ListOrderItemsByOrderID :many
