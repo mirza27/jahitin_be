@@ -24,10 +24,10 @@ func (s *ApiServer) SetupRoutes() {
 	authRoutes.GET("/auth/session", h.Auth.Session)
 
 	// categories
-	router.GET("/category/list", h.Order.ListCategories)
+	authRoutes.GET("/category/list", h.ClothesCategory.ListAllClothesCategoriesHandler)
 
 	// services
-	router.GET("/service/list", h.Order.ListServices)
+	authRoutes.GET("/service/list", h.Order.ListServices)
 
 	// order
 	authRoutes.POST("/order/create", h.Order.CreateOrderHandler)

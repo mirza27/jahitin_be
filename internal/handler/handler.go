@@ -8,10 +8,11 @@ import (
 )
 
 type Handler struct {
-	User     *UserHandler
-	Auth     *AuthHandler
-	Order    *OrderHandler
-	Customer *CustomerHandler
+	User            *UserHandler
+	Auth            *AuthHandler
+	Order           *OrderHandler
+	Customer        *CustomerHandler
+	ClothesCategory *ClothesCategoryHandler
 }
 
 func NewHandler(store db.Store, token token.Maker) *Handler {
@@ -19,12 +20,14 @@ func NewHandler(store db.Store, token token.Maker) *Handler {
 	authService := service.NewAuthService(store, token)
 	orderService := service.NewOrderService(store)
 	customerService := service.NewCustomerService(store)
+	clothesCategoryService := service.NewClothesCategoryService(store)
 
 	return &Handler{
-		User:     NewUserHandler(store, userService),
-		Auth:     NewAuthHandler(store, authService, token),
-		Order:    NewOrderHandler(store, orderService),
-		Customer: NewCustomerHandler(store, customerService),
+		User:            NewUserHandler(store, userService),
+		Auth:            NewAuthHandler(store, authService, token),
+		Order:           NewOrderHandler(store, orderService),
+		Customer:        NewCustomerHandler(store, customerService),
+		ClothesCategory: NewClothesCategoryHandler(store, clothesCategoryService),
 	}
 }
 
