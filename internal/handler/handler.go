@@ -13,6 +13,7 @@ type Handler struct {
 	Order           *OrderHandler
 	Customer        *CustomerHandler
 	ClothesCategory *ClothesCategoryHandler
+	ServiceType     *ServiceTypeHandler
 }
 
 func NewHandler(store db.Store, token token.Maker) *Handler {
@@ -21,6 +22,7 @@ func NewHandler(store db.Store, token token.Maker) *Handler {
 	orderService := service.NewOrderService(store)
 	customerService := service.NewCustomerService(store)
 	clothesCategoryService := service.NewClothesCategoryService(store)
+	serviceTypeService := service.NewServiceTypeService(store)
 
 	return &Handler{
 		User:            NewUserHandler(store, userService),
@@ -28,6 +30,7 @@ func NewHandler(store db.Store, token token.Maker) *Handler {
 		Order:           NewOrderHandler(store, orderService),
 		Customer:        NewCustomerHandler(store, customerService),
 		ClothesCategory: NewClothesCategoryHandler(store, clothesCategoryService),
+		ServiceType:     NewServiceTypeHandler(store, serviceTypeService),
 	}
 }
 

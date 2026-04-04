@@ -20,7 +20,7 @@ func (h *ClothesCategoryHandler) ListAllClothesCategoriesHandler(c *gin.Context)
 
 	categories, err := h.service.ListClothesCategories(c.Request.Context())
 	if err != nil {
-		c.JSON(500, gin.H{"error": "failed to list clothes categories"})
+		c.JSON(400, gin.H{"error": "failed to list clothes categories"})
 		return
 	}
 
