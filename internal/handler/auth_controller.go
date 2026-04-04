@@ -13,13 +13,13 @@ import (
 )
 
 type AuthHandler struct {
-	store     db.Store
-	service   service.AuthService
-	tokenMake token.Maker
+	store      db.Store
+	service    service.AuthService
+	tokenMaker token.Maker
 }
 
-func NewAuthHandler(store db.Store, authService service.AuthService, tokenMake token.Maker) *AuthHandler {
-	return &AuthHandler{store: store, service: authService, tokenMake: tokenMake}
+func NewAuthHandler(store db.Store, authService service.AuthService, tokenMaker token.Maker) *AuthHandler {
+	return &AuthHandler{store: store, service: authService, tokenMaker: tokenMaker}
 }
 
 type SessionResponse struct {

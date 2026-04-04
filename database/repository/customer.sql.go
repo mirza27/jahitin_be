@@ -45,6 +45,26 @@ func (q *Queries) CreateCustomer(ctx context.Context, arg CreateCustomerParams) 
 	return i, err
 }
 
+const getCustomerByID = `-- name: GetCustomerByID :one
+SELECT id, user_id, name, phone, notes, updated_at, created_at FROM customers
+WHERE id = $1
+`
+
+func (q *Queries) GetCustomerByID(ctx context.Context, id int64) (Customer, error) {
+	row := q.db.QueryRowContext(ctx, getCustomerByID, id)
+	var i Customer
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.Phone,
+		&i.Notes,
+		&i.UpdatedAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const listCustomersByUserID = `-- name: ListCustomersByUserID :many
 SELECT id, user_id, name, phone, notes, updated_at, created_at FROM customers
 WHERE user_id = $1
@@ -87,4 +107,31 @@ func (q *Queries) ListCustomersByUserID(ctx context.Context, arg ListCustomersBy
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateCustomerNotes = `-- name: UpdateCustomerNotes :one
+UPDATE customers
+SET notes = $2, updated_at = NOW()
+WHERE id = $1
+RETURNING id, user_id, name, phone, notes, updated_at, created_at
+`
+
+type UpdateCustomerNotesParams struct {
+	ID    int64          `json:"id"`
+	Notes sql.NullString `json:"notes"`
+}
+
+func (q *Queries) UpdateCustomerNotes(ctx context.Context, arg UpdateCustomerNotesParams) (Customer, error) {
+	row := q.db.QueryRowContext(ctx, updateCustomerNotes, arg.ID, arg.Notes)
+	var i Customer
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.Phone,
+		&i.Notes,
+		&i.UpdatedAt,
+		&i.CreatedAt,
+	)
+	return i, err
 }

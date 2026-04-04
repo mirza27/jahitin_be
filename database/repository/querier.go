@@ -15,6 +15,7 @@ type Querier interface {
 	CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error)
 	CreateOrderItem(ctx context.Context, arg CreateOrderItemParams) (OrderItem, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	GetCustomerByID(ctx context.Context, id int64) (Customer, error)
 	GetOrderDetailsByOrderID(ctx context.Context, id int64) (GetOrderDetailsByOrderIDRow, error)
 	GetUserByDeviceID(ctx context.Context, deviceID sql.NullString) (User, error)
 	GetUserByID(ctx context.Context, id int64) (User, error)
@@ -26,6 +27,7 @@ type Querier interface {
 	ListServiceTypes(ctx context.Context) ([]ServiceType, error)
 	SeedClothesCategories(ctx context.Context) ([]ClothesCategory, error)
 	SeedServiceTypes(ctx context.Context) ([]ServiceType, error)
+	UpdateCustomerNotes(ctx context.Context, arg UpdateCustomerNotesParams) (Customer, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 }
 

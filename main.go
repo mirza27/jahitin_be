@@ -34,7 +34,7 @@ func main() {
 	}
 	defer dbConn.Close()
 
-	store := db.New(dbConn)
+	store := db.NewStore(dbConn)
 
 	// token maker object
 	tokenMaker, err := token.NewMaker(config.TokenSecretKey)
