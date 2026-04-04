@@ -31,14 +31,14 @@ func (s *ApiServer) SetupRoutes() {
 
 	// order
 	authRoutes.POST("/order/create", h.Order.CreateOrderHandler)
-	authRoutes.GET("/order/customer/detail", h.Order.GetRelatedCustomerOrderHandler)
 	authRoutes.GET("/order/list", h.Order.ListOrders)
 	authRoutes.GET("/order/detail", h.Order.DetailOrder)
 	authRoutes.PUT("/order/update", h.Order.UpdateOrder)
 	authRoutes.DELETE("/order/delete", h.Order.DeleteOrder)
 
 	// customers
-	authRoutes.GET("/customer/list", h.User.ListCustomers)
+	authRoutes.GET("/customer/list", h.Customer.ListCustomersHandler)
+	authRoutes.GET("/customer/detail", h.Customer.GetCustomerDetailHandler)
 
 	s.router = router
 }

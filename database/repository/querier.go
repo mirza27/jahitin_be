@@ -21,6 +21,7 @@ type Querier interface {
 	GetUserByID(ctx context.Context, id int64) (User, error)
 	ListClothesCategories(ctx context.Context) ([]ClothesCategory, error)
 	ListCustomersByUserID(ctx context.Context, arg ListCustomersByUserIDParams) ([]Customer, error)
+	ListCustomersByUserIDAndName(ctx context.Context, arg ListCustomersByUserIDAndNameParams) ([]Customer, error)
 	ListOrderItemsByOrderID(ctx context.Context, arg ListOrderItemsByOrderIDParams) ([]OrderItem, error)
 	ListOrdersByUserId(ctx context.Context, arg ListOrdersByUserIdParams) ([]Order, error)
 	ListOrdersHeaderByUserID(ctx context.Context, arg ListOrdersHeaderByUserIDParams) ([]ListOrdersHeaderByUserIDRow, error)

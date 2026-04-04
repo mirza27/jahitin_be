@@ -125,10 +125,6 @@ func (h *OrderHandler) ListOrders(c *gin.Context) {
 	c.JSON(http.StatusNotImplemented, gin.H{"message": "not implemented"})
 }
 
-func (h *OrderHandler) GetRelatedCustomerOrderHandler(c *gin.Context) {
-
-}
-
 func (h *OrderHandler) DetailOrder(c *gin.Context) {
 	c.JSON(http.StatusNotImplemented, gin.H{"message": "not implemented"})
 }

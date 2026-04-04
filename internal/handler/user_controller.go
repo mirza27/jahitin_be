@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"database/sql"
 	"net/http"
 
 	db "jahitin_be/database/repository"
@@ -58,9 +57,9 @@ func (h *UserHandler) CreateUserLocal(c *gin.Context) {
 		Name:     user.Name,
 		DeviceID: user.DeviceID.String,
 		UserType: user.UserType,
-		Username: nullStringValue(user.Username),
-		Email:    nullStringValue(user.Email),
-		Phone:    nullStringValue(user.Phone),
+		Username: NullStringValue(user.Username),
+		Email:    NullStringValue(user.Email),
+		Phone:    NullStringValue(user.Phone),
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"data": userResponse})
@@ -73,11 +72,4 @@ func (h *UserHandler) CreateUserAccount(c *gin.Context) {
 func (h *UserHandler) ListCustomers(c *gin.Context) {
 	c.JSON(http.StatusNotImplemented, gin.H{"message": "not implemented"})
 
-}
-
-func nullStringValue(s sql.NullString) string {
-	if s.Valid {
-		return s.String
-	}
-	return ""
 }

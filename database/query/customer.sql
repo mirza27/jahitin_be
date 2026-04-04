@@ -5,6 +5,13 @@ ORDER BY created_at DESC
 LIMIT $2 OFFSET $3;
 
 
+-- name: ListCustomersByUserIDAndName :many
+SELECT * FROM customers
+WHERE user_id = $1 AND name ILIKE '%' || $2 || '%'
+ORDER BY created_at DESC
+LIMIT $3 OFFSET $4;
+
+
 -- name: CreateCustomer :one
 INSERT INTO customers (
     name, user_id, phone, notes

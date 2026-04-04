@@ -109,6 +109,56 @@ func (q *Queries) ListCustomersByUserID(ctx context.Context, arg ListCustomersBy
 	return items, nil
 }
 
+const listCustomersByUserIDAndName = `-- name: ListCustomersByUserIDAndName :many
+SELECT id, user_id, name, phone, notes, updated_at, created_at FROM customers
+WHERE user_id = $1 AND name ILIKE '%' || $2 || '%'
+ORDER BY created_at DESC
+LIMIT $3 OFFSET $4
+`
+
+type ListCustomersByUserIDAndNameParams struct {
+	UserID  int64          `json:"user_id"`
+	Column2 sql.NullString `json:"column_2"`
+	Limit   int32          `json:"limit"`
+	Offset  int32          `json:"offset"`
+}
+
+func (q *Queries) ListCustomersByUserIDAndName(ctx context.Context, arg ListCustomersByUserIDAndNameParams) ([]Customer, error) {
+	rows, err := q.db.QueryContext(ctx, listCustomersByUserIDAndName,
+		arg.UserID,
+		arg.Column2,
+		arg.Limit,
+		arg.Offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Customer{}
+	for rows.Next() {
+		var i Customer
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Name,
+			&i.Phone,
+			&i.Notes,
+			&i.UpdatedAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateCustomerNotes = `-- name: UpdateCustomerNotes :one
 UPDATE customers
 SET notes = $2, updated_at = NOW()
