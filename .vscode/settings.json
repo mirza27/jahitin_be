@@ -1,3 +1,11 @@
 {
-  "conventionalCommits.scopes": ["Router"]
+  "conventionalCommits.scopes": [
+    "Router",
+    "Handler",
+    "Seed",
+    "Athorization",
+    "Authorization",
+    "Order",
+    "Customer"
+  ]
 }

@@ -11,3 +11,10 @@ device_id:string
 user_id:string
 email: 
 username:
+
+
+
+
+suggestionn:
+- tambah gambar
+- simpan konfigurasi 
