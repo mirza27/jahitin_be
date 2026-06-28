@@ -1,4 +1,4 @@
-FROM golang:1.22-alpine
+FROM golang:1.25-alpine
 
 WORKDIR /app
 
@@ -10,6 +10,6 @@ RUN go mod download
 
 COPY . .
 
-EXPOSE 8555
+EXPOSE 8000
 
 CMD ["go", "run", "main.go"]

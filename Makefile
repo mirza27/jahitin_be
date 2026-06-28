@@ -18,11 +18,15 @@ server:
 seed:
 	go run ./cmd/seed
 
-sqlc:
-	sqlc generate
 
 api:
 	go run main.go
+
+run:
+	docker compose up -d --build
+
+down:
+	docker compose down
 
 
 .PHONY: api
