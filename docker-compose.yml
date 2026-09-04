@@ -21,6 +21,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: mirzarama27/jahitin-be:latest
     container_name: jahitin_be
     env_file:
       - .env
