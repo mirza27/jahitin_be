@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  BE_IMAGE_NAME: jahitin-be
+  BE_IMAGE_NAME: mirzarama27/jahitin-be
 
 jobs:
   # build BE
