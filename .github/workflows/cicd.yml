@@ -28,7 +28,7 @@ jobs:
       # Build image
       - name: Build Docker Image
         run: |
-          docker build -f docker/Dockerfile -t ${{ env.BE_IMAGE_NAME }}:latest .
+          docker build -f Dockerfile -t ${{ env.BE_IMAGE_NAME }}:latest .
 
       # Publish image
       - name: Push Docker Image
