@@ -39,7 +39,7 @@ jobs:
     name: Deploy to Server
     runs-on: ubuntu-latest
 
-    needs: build-and-publish
+    needs: build-be
 
     steps:
       - name: Deploy via SSH
