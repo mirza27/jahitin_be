@@ -24,8 +24,8 @@ services:
     container_name: jahitin_be
     env_file:
       - .env
-    ports:
-      - "${APP_PORT}:${APP_PORT}"
+    expose:
+      - "${APP_PORT}"
     depends_on:
       - jahitin_db
     networks:
