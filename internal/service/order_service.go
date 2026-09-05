@@ -78,6 +78,8 @@ func (o *orderService) CreateUserOrder(ctx context.Context, user_id int64, o_dat
 			if customer.UserID != user_id {
 				return errors.New("customer does not belong to user")
 			}
+
+			customerID = customer.ID
 		}
 
 		oParam := db.CreateOrderParams{
