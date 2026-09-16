@@ -72,25 +72,25 @@ func (q *Queries) FinishOrderStatus(ctx context.Context, id int64) (Order, error
 }
 
 const getOrderDetailsByOrderID = `-- name: GetOrderDetailsByOrderID :one
-SELECT st.id, st.name, st.created_at, cat.id, cat.name, cat.created_at, o.id, o.name, o.deadline, o.status, c.id, c.name AS customer_name, c.phone AS customer_phone FROM orders o
+SELECT o.id, o.name,
+  o.deadline,
+  o.status,
+  o.user_id,
+  c.id AS customer_id,
+  c.name AS customer_name,
+  c.phone AS customer_phone
+FROM orders o
 JOIN customers c ON o.customer_id = c.id
-JOIN clothes_categories cat ON cat.id = o.category_id
-JOIN service_types st ON st.id = o.service_type_id 
 WHERE o.id = $1
 `
 
 type GetOrderDetailsByOrderIDRow struct {
 	ID            int64          `json:"id"`
 	Name          string         `json:"name"`
-	CreatedAt     time.Time      `json:"created_at"`
-	ID_2          int64          `json:"id_2"`
-	Name_2        string         `json:"name_2"`
-	CreatedAt_2   time.Time      `json:"created_at_2"`
-	ID_3          int64          `json:"id_3"`
-	Name_3        string         `json:"name_3"`
 	Deadline      sql.NullTime   `json:"deadline"`
 	Status        string         `json:"status"`
-	ID_4          int64          `json:"id_4"`
+	UserID        int64          `json:"user_id"`
+	CustomerID    int64          `json:"customer_id"`
 	CustomerName  string         `json:"customer_name"`
 	CustomerPhone sql.NullString `json:"customer_phone"`
 }
@@ -101,15 +101,10 @@ func (q *Queries) GetOrderDetailsByOrderID(ctx context.Context, id int64) (GetOr
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
-		&i.CreatedAt,
-		&i.ID_2,
-		&i.Name_2,
-		&i.CreatedAt_2,
-		&i.ID_3,
-		&i.Name_3,
 		&i.Deadline,
 		&i.Status,
-		&i.ID_4,
+		&i.UserID,
+		&i.CustomerID,
 		&i.CustomerName,
 		&i.CustomerPhone,
 	)

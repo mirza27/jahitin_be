@@ -47,7 +47,11 @@ type CreateOrderRequest struct {
 func (h *OrderHandler) CreateOrderHandler(c *gin.Context) {
 	var req CreateOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "invalid request body",
+			"error":   err.Error(),
+		})
 		return
 	}
 
@@ -59,7 +63,11 @@ func (h *OrderHandler) CreateOrderHandler(c *gin.Context) {
 	if req.Deadline != "" {
 		parsedDeadline, err := time.Parse(time.RFC3339, req.Deadline)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid deadline format, expected RFC3339"})
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "invalid deadline",
+				"error":   "invalid deadline format, expected RFC3339",
+			})
 			return
 		}
 		deadline = &parsedDeadline
@@ -94,16 +102,27 @@ func (h *OrderHandler) CreateOrderHandler(c *gin.Context) {
 
 	valid, err := h.service.CreateUserOrder(c.Request.Context(), userID, oInput, cInput)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to create order", "details": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "failed to create order",
+			"error":   err.Error(),
+		})
 		return
 	}
 
 	if !valid {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid order data"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "invalid order data",
+			"error":   "order data is invalid",
+		})
 		return
 	}
 
-	c.JSON(http.StatusAccepted, gin.H{"message": "order created successfully"})
+	c.JSON(http.StatusAccepted, gin.H{
+		"success": true,
+		"message": "order created successfully",
+	})
 }
 
 type ListOrdersRequest struct {
@@ -116,7 +135,11 @@ type ListOrdersRequest struct {
 func (h *OrderHandler) ListOrdersHandler(c *gin.Context) {
 	var req ListOrdersRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "invalid query parameters",
+			"error":   err.Error(),
+		})
 		return
 	}
 
@@ -133,21 +156,60 @@ func (h *OrderHandler) ListOrdersHandler(c *gin.Context) {
 
 	orders, err := h.service.ListUserOrders(c.Request.Context(), ordersFilter)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list orders", "details": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "failed to list orders",
+			"error":   err.Error(),
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": orders})
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "success get orders",
+		"data":    orders,
+	})
 }
 
-func (h *OrderHandler) DetailOrder(c *gin.Context) {
+type GetDetailOrderRequest struct {
+	OrderID int64 `uri:"order_id" binding:"required"`
+}
+
+func (h *OrderHandler) GetDetailOrderHandler(c *gin.Context) {
+	var req GetDetailOrderRequest
+	if err := c.ShouldBindUri(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "invalid parameter",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	authPayload := c.MustGet("authorization_payload").(*token.Payload)
+	userID := authPayload.UserID
+
+	orderDetails, err := h.service.GetOrderDetailsByOrderID(c.Request.Context(), userID, req.OrderID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "failed to get order details", "error": err.Error(), "success": false})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "success get order details",
+		"data":    orderDetails,
+	})
+}
+
+func (h *OrderHandler) UpdateOrderStatusHandler(c *gin.Context) {
 	c.JSON(http.StatusNotImplemented, gin.H{"message": "not implemented"})
 }
 
-func (h *OrderHandler) UpdateOrder(c *gin.Context) {
+func (h *OrderHandler) UpdateOrderHandler(c *gin.Context) {
 	c.JSON(http.StatusNotImplemented, gin.H{"message": "not implemented"})
 }
 
-func (h *OrderHandler) DeleteOrder(c *gin.Context) {
+func (h *OrderHandler) DeleteOrderHandler(c *gin.Context) {
 	c.JSON(http.StatusNotImplemented, gin.H{"message": "not implemented"})
 }

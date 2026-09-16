@@ -1,8 +1,23 @@
 -- name: ListOrderItemsByOrderID :many
-SELECT cc.*, st.*, oi.* FROM order_items oi
-JOIN clothes_categories cc ON cc.id = oi.category_id
-JOIN service_types st ON st.id = oi.service_type_id
-WHERE order_id = $1
+SELECT
+    oi.id,
+    oi.order_id,
+    oi.category_id,
+    oi.service_type_id,
+    oi.clothes_for,
+    oi.custom_service_name,
+    oi.notes,
+    oi.price,
+    oi.status,
+    oi.updated_at,
+    oi.created_at,
+    oi.finished_at,
+    cc.name AS category_name,
+    st.name AS service_type_name
+FROM order_items oi
+LEFT JOIN clothes_categories cc ON cc.id = oi.category_id
+LEFT JOIN service_types st ON st.id = oi.service_type_id
+WHERE oi.order_id = $1
 ORDER BY oi.created_at DESC
 LIMIT $2 OFFSET $3;
 

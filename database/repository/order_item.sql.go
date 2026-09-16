@@ -137,10 +137,25 @@ func (q *Queries) ListOrderItemsByMultipleOrderIDs(ctx context.Context, dollar_1
 }
 
 const listOrderItemsByOrderID = `-- name: ListOrderItemsByOrderID :many
-SELECT cc.id, cc.name, cc.created_at, st.id, st.name, st.created_at, oi.id, oi.order_id, oi.category_id, oi.service_type_id, oi.clothes_for, oi.custom_service_name, oi.notes, oi.price, oi.status, oi.updated_at, oi.created_at, oi.finished_at FROM order_items oi
-JOIN clothes_categories cc ON cc.id = oi.category_id
-JOIN service_types st ON st.id = oi.service_type_id
-WHERE order_id = $1
+SELECT
+    oi.id,
+    oi.order_id,
+    oi.category_id,
+    oi.service_type_id,
+    oi.clothes_for,
+    oi.custom_service_name,
+    oi.notes,
+    oi.price,
+    oi.status,
+    oi.updated_at,
+    oi.created_at,
+    oi.finished_at,
+    cc.name AS category_name,
+    st.name AS service_type_name
+FROM order_items oi
+LEFT JOIN clothes_categories cc ON cc.id = oi.category_id
+LEFT JOIN service_types st ON st.id = oi.service_type_id
+WHERE oi.order_id = $1
 ORDER BY oi.created_at DESC
 LIMIT $2 OFFSET $3
 `
@@ -153,12 +168,6 @@ type ListOrderItemsByOrderIDParams struct {
 
 type ListOrderItemsByOrderIDRow struct {
 	ID                int64          `json:"id"`
-	Name              string         `json:"name"`
-	CreatedAt         time.Time      `json:"created_at"`
-	ID_2              int64          `json:"id_2"`
-	Name_2            string         `json:"name_2"`
-	CreatedAt_2       time.Time      `json:"created_at_2"`
-	ID_3              int64          `json:"id_3"`
 	OrderID           int64          `json:"order_id"`
 	CategoryID        sql.NullInt64  `json:"category_id"`
 	ServiceTypeID     sql.NullInt64  `json:"service_type_id"`
@@ -168,8 +177,10 @@ type ListOrderItemsByOrderIDRow struct {
 	Price             int64          `json:"price"`
 	Status            string         `json:"status"`
 	UpdatedAt         time.Time      `json:"updated_at"`
-	CreatedAt_3       time.Time      `json:"created_at_3"`
+	CreatedAt         time.Time      `json:"created_at"`
 	FinishedAt        sql.NullTime   `json:"finished_at"`
+	CategoryName      sql.NullString `json:"category_name"`
+	ServiceTypeName   sql.NullString `json:"service_type_name"`
 }
 
 func (q *Queries) ListOrderItemsByOrderID(ctx context.Context, arg ListOrderItemsByOrderIDParams) ([]ListOrderItemsByOrderIDRow, error) {
@@ -183,12 +194,6 @@ func (q *Queries) ListOrderItemsByOrderID(ctx context.Context, arg ListOrderItem
 		var i ListOrderItemsByOrderIDRow
 		if err := rows.Scan(
 			&i.ID,
-			&i.Name,
-			&i.CreatedAt,
-			&i.ID_2,
-			&i.Name_2,
-			&i.CreatedAt_2,
-			&i.ID_3,
 			&i.OrderID,
 			&i.CategoryID,
 			&i.ServiceTypeID,
@@ -198,8 +203,10 @@ func (q *Queries) ListOrderItemsByOrderID(ctx context.Context, arg ListOrderItem
 			&i.Price,
 			&i.Status,
 			&i.UpdatedAt,
-			&i.CreatedAt_3,
+			&i.CreatedAt,
 			&i.FinishedAt,
+			&i.CategoryName,
+			&i.ServiceTypeName,
 		); err != nil {
 			return nil, err
 		}

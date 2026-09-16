@@ -15,10 +15,15 @@ LIMIT $4 OFFSET $5;
 
 
 -- name: GetOrderDetailsByOrderID :one
-SELECT st.*, cat.*, o.id, o.name, o.deadline, o.status, c.id, c.name AS customer_name, c.phone AS customer_phone FROM orders o
+SELECT o.id, o.name,
+  o.deadline,
+  o.status,
+  o.user_id,
+  c.id AS customer_id,
+  c.name AS customer_name,
+  c.phone AS customer_phone
+FROM orders o
 JOIN customers c ON o.customer_id = c.id
-JOIN clothes_categories cat ON cat.id = o.category_id
-JOIN service_types st ON st.id = o.service_type_id 
 WHERE o.id = $1;
 
 

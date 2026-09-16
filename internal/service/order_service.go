@@ -12,6 +12,7 @@ import (
 type OrderService interface {
 	CreateUserOrder(ctx context.Context, user_id int64, o_data CreateUserOrderInput, c_data CustomerInput) (bool, error)
 	ListUserOrders(ctx context.Context, filter ListOrdersFilter) ([]*ListOrdersOutput, error)
+	GetOrderDetailsByOrderID(ctx context.Context, userId int64, orderID int64) (*DetailOrderOutput, error)
 }
 
 type orderService struct {
@@ -210,12 +211,12 @@ func (o *orderService) ListUserOrders(ctx context.Context, filter ListOrdersFilt
 	fmt.Println("orderItems:", orderItems)
 
 	// combine order with order items
-	combinedOrders := o.CombineOrdersWithItems(orders, orderItems)
+	combinedOrders := o.combineOrdersWithItems(orders, orderItems)
 
 	return combinedOrders, nil
 }
 
-func (o *orderService) CombineOrdersWithItems(orders []db.ListUserOrdersFilteredRow, orderItems []db.ListOrderItemsByMultipleOrderIDsRow) []*ListOrdersOutput {
+func (o *orderService) combineOrdersWithItems(orders []db.ListUserOrdersFilteredRow, orderItems []db.ListOrderItemsByMultipleOrderIDsRow) []*ListOrdersOutput {
 
 	// create hashmap orderID -> order items
 	orderMap := make(map[int64][]OrderItemOutput)
@@ -257,4 +258,82 @@ func (o *orderService) CombineOrdersWithItems(orders []db.ListUserOrdersFiltered
 
 	return combinedOrders
 
+}
+
+type DetailOrderItemOutput struct {
+	ClothesFor          string
+	ClothesCategoryID   int64
+	ClothesCategoryName string
+	ServiceTypeID       int64
+	ServiceTypeName     string
+	CustomServiceName   string
+	Price               int64
+	Notes               string
+	Status              string
+}
+type DetailOrderOutput struct {
+	OrderID      int64
+	Name         string
+	Deadline     *time.Time
+	CustomerName string
+	CustomerId   int64
+	Status       string
+	Items        []DetailOrderItemOutput
+}
+
+func (o *orderService) GetOrderDetailsByOrderID(ctx context.Context, userId int64, orderID int64) (*DetailOrderOutput, error) {
+
+	// get order
+	order, err := o.store.GetOrderDetailsByOrderID(ctx, orderID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return &DetailOrderOutput{}, errors.New("order not found")
+		}
+		return &DetailOrderOutput{}, err
+	}
+
+	// get order_items
+	orderItems, err := o.store.ListOrderItemsByOrderID(ctx, db.ListOrderItemsByOrderIDParams{
+		OrderID: orderID,
+		Limit:   100,
+		Offset:  0,
+	})
+	if err != nil {
+		return &DetailOrderOutput{}, err
+	}
+
+	if order.UserID != userId {
+		return &DetailOrderOutput{}, errors.New("order does not belong to user")
+	}
+
+	var deadline *time.Time
+	if order.Deadline.Valid {
+		t := order.Deadline.Time
+		deadline = &t
+	}
+
+	var orderItemsOutput []DetailOrderItemOutput
+	for _, item := range orderItems {
+		orderItemsOutput = append(orderItemsOutput, DetailOrderItemOutput{
+			ClothesFor:          item.ClothesFor,
+			ClothesCategoryID:   NullInt64Value(item.CategoryID),
+			ClothesCategoryName: NullStringValue(item.CategoryName),
+			ServiceTypeID:       NullInt64Value(item.ServiceTypeID),
+			ServiceTypeName:     NullStringValue(item.ServiceTypeName),
+			CustomServiceName:   NullStringValue(item.CustomServiceName),
+			Price:               item.Price,
+			Notes:               NullStringValue(item.Notes),
+			Status:              item.Status,
+		})
+	}
+
+	return &DetailOrderOutput{
+		OrderID:      order.ID,
+		Name:         order.Name,
+		Deadline:     deadline,
+		CustomerName: order.CustomerName,
+		CustomerId:   order.CustomerID,
+		Status:       order.Status,
+		Items:        orderItemsOutput,
+	}, nil
 }
