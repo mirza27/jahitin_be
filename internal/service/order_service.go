@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	db "jahitin_be/database/repository"
 	"time"
 )
@@ -160,17 +161,21 @@ type ListOrdersOutput struct {
 	Name         string
 	Deadline     *time.Time
 	CustomerName string
+	CustomerId   int64
 	Status       string
 	Items        []OrderItemOutput
 }
 
 type OrderItemOutput struct {
-	ClothesFor        string
-	ClothesCategoryID int64
-	ServiceTypeID     int64
-	CustomServiceName string
-	Price             int64
-	Status            string
+	ClothesFor          string
+	ClothesCategoryID   int64
+	ClothesCategoryName string
+	ServiceTypeID       int64
+	ServiceTypeName     string
+	CustomServiceName   string
+	Price               int64
+	Notes               string
+	Status              string
 }
 
 func (o *orderService) ListUserOrders(ctx context.Context, filter ListOrdersFilter) ([]*ListOrdersOutput, error) {
@@ -202,24 +207,30 @@ func (o *orderService) ListUserOrders(ctx context.Context, filter ListOrdersFilt
 		return nil, err
 	}
 
+	fmt.Println("orderItems:", orderItems)
+
 	// combine order with order items
 	combinedOrders := o.CombineOrdersWithItems(orders, orderItems)
 
 	return combinedOrders, nil
 }
 
-func (o *orderService) CombineOrdersWithItems(orders []db.ListUserOrdersFilteredRow, orderItems []db.OrderItem) []*ListOrdersOutput {
+func (o *orderService) CombineOrdersWithItems(orders []db.ListUserOrdersFilteredRow, orderItems []db.ListOrderItemsByMultipleOrderIDsRow) []*ListOrdersOutput {
 
 	// create hashmap orderID -> order items
 	orderMap := make(map[int64][]OrderItemOutput)
+
 	for _, item := range orderItems {
 		orderMap[item.OrderID] = append(orderMap[item.OrderID], OrderItemOutput{
-			ClothesFor:        item.ClothesFor,
-			ClothesCategoryID: NullInt64Value(item.CategoryID),
-			ServiceTypeID:     NullInt64Value(item.ServiceTypeID),
-			CustomServiceName: NullStringValue(item.CustomServiceName),
-			Price:             item.Price,
-			Status:            item.Status,
+			ClothesFor:          item.ClothesFor,
+			ClothesCategoryID:   NullInt64Value(item.CategoryID),
+			ClothesCategoryName: NullStringValue(item.CategoryName),
+			ServiceTypeID:       NullInt64Value(item.ServiceTypeID),
+			ServiceTypeName:     NullStringValue(item.ServiceTypeName),
+			CustomServiceName:   NullStringValue(item.CustomServiceName),
+			Price:               item.Price,
+			Notes:               NullStringValue(item.Notes),
+			Status:              item.Status,
 		})
 	}
 
@@ -238,6 +249,7 @@ func (o *orderService) CombineOrdersWithItems(orders []db.ListUserOrdersFiltered
 			Name:         order.Name,
 			Deadline:     deadline,
 			CustomerName: order.CustomerName,
+			CustomerId:   order.CustomerID,
 			Status:       order.Status,
 			Items:        orderMap[order.ID],
 		}

@@ -13,9 +13,9 @@ import (
 
 const createOrder = `-- name: CreateOrder :one
 INSERT INTO orders (
-    user_id, name, customer_id, deadline, status
+    user_id, name, customer_id, deadline
 ) VALUES (
-    $1, $2, $3, $4, $5
+    $1, $2, $3, $4
 ) RETURNING id, name, user_id, customer_id, deadline, status, sharing_code, updated_at, created_at, finished_at
 `
 
@@ -24,7 +24,6 @@ type CreateOrderParams struct {
 	Name       string       `json:"name"`
 	CustomerID int64        `json:"customer_id"`
 	Deadline   sql.NullTime `json:"deadline"`
-	Status     string       `json:"status"`
 }
 
 func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error) {
@@ -33,7 +32,6 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		arg.Name,
 		arg.CustomerID,
 		arg.Deadline,
-		arg.Status,
 	)
 	var i Order
 	err := row.Scan(
@@ -51,18 +49,48 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 	return i, err
 }
 
+const finishOrderStatus = `-- name: FinishOrderStatus :one
+UPDATE orders SET status = 'completed', finished_at = NOW() WHERE id = $1 RETURNING id, name, user_id, customer_id, deadline, status, sharing_code, updated_at, created_at, finished_at
+`
+
+func (q *Queries) FinishOrderStatus(ctx context.Context, id int64) (Order, error) {
+	row := q.db.QueryRowContext(ctx, finishOrderStatus, id)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.UserID,
+		&i.CustomerID,
+		&i.Deadline,
+		&i.Status,
+		&i.SharingCode,
+		&i.UpdatedAt,
+		&i.CreatedAt,
+		&i.FinishedAt,
+	)
+	return i, err
+}
+
 const getOrderDetailsByOrderID = `-- name: GetOrderDetailsByOrderID :one
-SELECT o.id, o.name, o.deadline, o.status, c.id, c.name AS customer_name, c.phone AS customer_phone FROM orders o
+SELECT st.id, st.name, st.created_at, cat.id, cat.name, cat.created_at, o.id, o.name, o.deadline, o.status, c.id, c.name AS customer_name, c.phone AS customer_phone FROM orders o
 JOIN customers c ON o.customer_id = c.id
+JOIN clothes_categories cat ON cat.id = o.category_id
+JOIN service_types st ON st.id = o.service_type_id 
 WHERE o.id = $1
 `
 
 type GetOrderDetailsByOrderIDRow struct {
 	ID            int64          `json:"id"`
 	Name          string         `json:"name"`
+	CreatedAt     time.Time      `json:"created_at"`
+	ID_2          int64          `json:"id_2"`
+	Name_2        string         `json:"name_2"`
+	CreatedAt_2   time.Time      `json:"created_at_2"`
+	ID_3          int64          `json:"id_3"`
+	Name_3        string         `json:"name_3"`
 	Deadline      sql.NullTime   `json:"deadline"`
 	Status        string         `json:"status"`
-	ID_2          int64          `json:"id_2"`
+	ID_4          int64          `json:"id_4"`
 	CustomerName  string         `json:"customer_name"`
 	CustomerPhone sql.NullString `json:"customer_phone"`
 }
@@ -73,9 +101,15 @@ func (q *Queries) GetOrderDetailsByOrderID(ctx context.Context, id int64) (GetOr
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
+		&i.CreatedAt,
+		&i.ID_2,
+		&i.Name_2,
+		&i.CreatedAt_2,
+		&i.ID_3,
+		&i.Name_3,
 		&i.Deadline,
 		&i.Status,
-		&i.ID_2,
+		&i.ID_4,
 		&i.CustomerName,
 		&i.CustomerPhone,
 	)
@@ -83,7 +117,7 @@ func (q *Queries) GetOrderDetailsByOrderID(ctx context.Context, id int64) (GetOr
 }
 
 const listUserOrdersFiltered = `-- name: ListUserOrdersFiltered :many
-SELECT o.id, o.name, o.user_id, o.customer_id, o.deadline, o.status, o.sharing_code, o.updated_at, o.created_at, o.finished_at, c.name AS customer_name
+SELECT o.id, o.name, o.user_id, o.customer_id, o.deadline, o.status, o.sharing_code, o.updated_at, o.created_at, o.finished_at, c.id AS customer_id, c.name AS customer_name
 FROM orders o
 JOIN customers c ON c.id = o.customer_id
 WHERE o.user_id = $1
@@ -116,6 +150,7 @@ type ListUserOrdersFilteredRow struct {
 	UpdatedAt    time.Time      `json:"updated_at"`
 	CreatedAt    time.Time      `json:"created_at"`
 	FinishedAt   sql.NullTime   `json:"finished_at"`
+	CustomerID_2 int64          `json:"customer_id_2"`
 	CustomerName string         `json:"customer_name"`
 }
 
@@ -145,6 +180,7 @@ func (q *Queries) ListUserOrdersFiltered(ctx context.Context, arg ListUserOrders
 			&i.UpdatedAt,
 			&i.CreatedAt,
 			&i.FinishedAt,
+			&i.CustomerID_2,
 			&i.CustomerName,
 		); err != nil {
 			return nil, err
@@ -158,4 +194,33 @@ func (q *Queries) ListUserOrdersFiltered(ctx context.Context, arg ListUserOrders
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateOrderStatus = `-- name: UpdateOrderStatus :one
+UPDATE orders set status = $1
+WHERE id = $2
+RETURNING id, name, user_id, customer_id, deadline, status, sharing_code, updated_at, created_at, finished_at
+`
+
+type UpdateOrderStatusParams struct {
+	Status string `json:"status"`
+	ID     int64  `json:"id"`
+}
+
+func (q *Queries) UpdateOrderStatus(ctx context.Context, arg UpdateOrderStatusParams) (Order, error) {
+	row := q.db.QueryRowContext(ctx, updateOrderStatus, arg.Status, arg.ID)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.UserID,
+		&i.CustomerID,
+		&i.Deadline,
+		&i.Status,
+		&i.SharingCode,
+		&i.UpdatedAt,
+		&i.CreatedAt,
+		&i.FinishedAt,
+	)
+	return i, err
 }
