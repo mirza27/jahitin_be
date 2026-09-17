@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"net/http"
+
 	db "jahitin_be/database/repository"
 	"jahitin_be/internal/service"
 
@@ -20,10 +22,18 @@ func (h *ServiceTypeHandler) ListAllServiceTypesHandler(c *gin.Context) {
 
 	services, err := h.service.ListServiceTypes(c.Request.Context())
 	if err != nil {
-		c.JSON(400, gin.H{"error": "failed to list service types"})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "failed to list service types",
+			"error":   err.Error(),
+		})
 		return
 	}
 
-	c.JSON(200, gin.H{"data": services})
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "success get service types",
+		"data":    services,
+	})
 
 }

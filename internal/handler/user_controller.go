@@ -37,7 +37,11 @@ func (h *UserHandler) CreateUserLocal(c *gin.Context) {
 	var req CreateUserLocalRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "invalid request body",
+			"error":   err.Error(),
+		})
 		return
 	}
 
@@ -48,7 +52,11 @@ func (h *UserHandler) CreateUserLocal(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "failed to create user",
+			"error":   err.Error(),
+		})
 		return
 	}
 
@@ -62,7 +70,11 @@ func (h *UserHandler) CreateUserLocal(c *gin.Context) {
 		Phone:    NullStringValue(user.Phone),
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"data": userResponse})
+	c.JSON(http.StatusCreated, gin.H{
+		"success": true,
+		"message": "user created successfully",
+		"data":    userResponse,
+	})
 }
 
 func (h *UserHandler) CreateUserAccount(c *gin.Context) {

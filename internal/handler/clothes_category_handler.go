@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"net/http"
+
 	db "jahitin_be/database/repository"
 	"jahitin_be/internal/service"
 
@@ -20,10 +22,18 @@ func (h *ClothesCategoryHandler) ListAllClothesCategoriesHandler(c *gin.Context)
 
 	categories, err := h.service.ListClothesCategories(c.Request.Context())
 	if err != nil {
-		c.JSON(400, gin.H{"error": "failed to list clothes categories"})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "failed to list clothes categories",
+			"error":   err.Error(),
+		})
 		return
 	}
 
-	c.JSON(200, gin.H{"data": categories})
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "success get clothes categories",
+		"data":    categories,
+	})
 
 }
