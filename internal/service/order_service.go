@@ -278,6 +278,7 @@ type DetailOrderOutput struct {
 	CustomerName string
 	CustomerId   int64
 	Status       string
+	TotalPrice   int64
 	Items        []DetailOrderItemOutput
 }
 
@@ -312,8 +313,12 @@ func (o *orderService) GetOrderDetailsByOrderID(ctx context.Context, userId int6
 		deadline = &t
 	}
 
+	var totalPrice int64 = 0
+
 	var orderItemsOutput []DetailOrderItemOutput
 	for _, item := range orderItems {
+		totalPrice += item.Price
+
 		orderItemsOutput = append(orderItemsOutput, DetailOrderItemOutput{
 			ClothesFor:          item.ClothesFor,
 			ClothesCategoryID:   NullInt64Value(item.CategoryID),
@@ -335,5 +340,6 @@ func (o *orderService) GetOrderDetailsByOrderID(ctx context.Context, userId int6
 		CustomerId:   order.CustomerID,
 		Status:       order.Status,
 		Items:        orderItemsOutput,
+		TotalPrice:   totalPrice,
 	}, nil
 }
