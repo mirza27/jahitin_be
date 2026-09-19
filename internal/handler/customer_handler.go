@@ -96,3 +96,7 @@ func (h *CustomerHandler) GetCustomerDetailHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"data": customer})
 }
+
+func (h *CustomerHandler) GetDetailCustomer(c *gin.Context) {
+
+}

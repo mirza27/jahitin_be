@@ -202,11 +202,12 @@ func (h *OrderHandler) GetDetailOrderHandler(c *gin.Context) {
 	})
 }
 
-func (h *OrderHandler) UpdateOrderStatusHandler(c *gin.Context) {
+func (h *OrderHandler) UpdateOrderHandler(c *gin.Context) {
+
 	c.JSON(http.StatusNotImplemented, gin.H{"message": "not implemented"})
 }
 
-func (h *OrderHandler) UpdateOrderHandler(c *gin.Context) {
+func (h *OrderHandler) UpdateOrderStatusHandler(c *gin.Context) {
 	c.JSON(http.StatusNotImplemented, gin.H{"message": "not implemented"})
 }
 
