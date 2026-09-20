@@ -28,6 +28,20 @@ func NullInt64Value(i sql.NullInt64) int64 {
 	return 0
 }
 
+func nullInt64(value *int64) sql.NullInt64 {
+	if value == nil {
+		return sql.NullInt64{Valid: false}
+	}
+	return sql.NullInt64{Int64: *value, Valid: true}
+}
+
+func nullString(value *string) sql.NullString {
+	if value == nil {
+		return sql.NullString{Valid: false}
+	}
+	return sql.NullString{String: *value, Valid: true}
+}
+
 func NullTimeValue(t sql.NullTime) time.Time {
 	if t.Valid {
 		return t.Time

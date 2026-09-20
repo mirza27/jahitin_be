@@ -15,6 +15,7 @@ type Querier interface {
 	CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error)
 	CreateOrderItem(ctx context.Context, arg CreateOrderItemParams) (OrderItem, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteOrderItemByOrderID(ctx context.Context, orderID int64) error
 	FinishOrderStatus(ctx context.Context, id int64) (Order, error)
 	GetCustomerByID(ctx context.Context, id int64) (Customer, error)
 	GetOrderDetailsByOrderID(ctx context.Context, id int64) (GetOrderDetailsByOrderIDRow, error)

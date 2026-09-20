@@ -13,6 +13,7 @@ type OrderService interface {
 	CreateUserOrder(ctx context.Context, user_id int64, o_data CreateUserOrderInput, c_data CustomerInput) (bool, error)
 	ListUserOrders(ctx context.Context, filter ListOrdersFilter) ([]*ListOrdersOutput, error)
 	GetOrderDetailsByOrderID(ctx context.Context, userId int64, orderID int64) (*DetailOrderOutput, error)
+	ReplaceOrderItemsByOrderID(ctx context.Context, userId int64, orderItemData []OrderItemUpdateInput, orderID int64) error
 }
 
 type orderService struct {
@@ -26,9 +27,9 @@ func NewOrderService(store db.Store) OrderService {
 type OrderItemInput struct {
 	ClothesFor          string
 	Notes               string
-	ClothesCategoryID   int64
-	ServiceTypeID       int64
-	CustomServiceName   string
+	ClothesCategoryID   *int64
+	ServiceTypeID       *int64
+	CustomServiceName   *string
 	Price               int64
 	IsSaveCustomerNotes bool
 }
@@ -98,19 +99,25 @@ func (o *orderService) CreateUserOrder(ctx context.Context, user_id int64, o_dat
 
 		// create each order item
 		for _, item := range o_data.Items {
-			serviceName := sql.NullString{Valid: false}
-			serviceTypeID := sql.NullInt64{Int64: item.ServiceTypeID, Valid: item.ServiceTypeID != 0}
-			if item.CustomServiceName != "" {
-				serviceName = sql.NullString{String: item.CustomServiceName, Valid: true}
-				serviceTypeID = sql.NullInt64{Valid: false}
+
+			// if serviceTypeID is nil, cusom service name must be provided
+			if item.ServiceTypeID == nil && (item.CustomServiceName == nil || *item.CustomServiceName == "") {
+				return errors.New("custom service name must be provided if service type ID is nil")
 			}
+
+			// serviceName := sql.NullString{Valid: false}
+			// serviceTypeID := sql.NullInt64{Int64: item.ServiceTypeID, Valid: item.ServiceTypeID != 0}
+			// if item.CustomServiceName != "" {
+			// 	serviceName = sql.NullString{String: item.CustomServiceName, Valid: true}
+			// 	serviceTypeID = sql.NullInt64{Valid: false}
+			// }
 
 			oiParam := db.CreateOrderItemParams{
 				OrderID:           order.ID,
-				CategoryID:        sql.NullInt64{Int64: item.ClothesCategoryID, Valid: item.ClothesCategoryID != 0},
-				ServiceTypeID:     serviceTypeID,
+				CategoryID:        nullInt64(item.ClothesCategoryID),
+				ServiceTypeID:     nullInt64(item.ServiceTypeID),
 				ClothesFor:        item.ClothesFor,
-				CustomServiceName: serviceName,
+				CustomServiceName: nullString(item.CustomServiceName),
 				Notes:             sql.NullString{String: item.Notes, Valid: item.Notes != ""},
 				Price:             item.Price,
 			}
@@ -342,4 +349,65 @@ func (o *orderService) GetOrderDetailsByOrderID(ctx context.Context, userId int6
 		Items:        orderItemsOutput,
 		TotalPrice:   totalPrice,
 	}, nil
+}
+
+type OrderItemUpdateInput struct {
+	ClothesFor          string
+	Notes               string
+	ClothesCategoryID   *int64
+	ServiceTypeID       *int64
+	CustomServiceName   *string
+	Price               int64
+	IsSaveCustomerNotes bool
+}
+
+func (o *orderService) ReplaceOrderItemsByOrderID(ctx context.Context, userId int64, orderItemData []OrderItemUpdateInput, orderID int64) error {
+
+	// get order
+	existingOrder, err := o.store.GetOrderDetailsByOrderID(ctx, orderID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return errors.New("order not found")
+		}
+		return err
+	}
+
+	if existingOrder.UserID != userId {
+		return errors.New("order does not belong to user")
+	}
+
+	return o.store.ExecTx(ctx, func(q *db.Queries) error {
+		// Replace all existing order items atomically.
+		if err := q.DeleteOrderItemByOrderID(ctx, orderID); err != nil {
+			return err
+		}
+
+		// Insert items individually so nullable foreign keys remain SQL NULL.
+		for _, item := range orderItemData {
+			_, err := q.CreateOrderItem(ctx, db.CreateOrderItemParams{
+				OrderID:           existingOrder.ID,
+				CategoryID:        nullInt64(item.ClothesCategoryID),
+				ServiceTypeID:     nullInt64(item.ServiceTypeID),
+				ClothesFor:        item.ClothesFor,
+				CustomServiceName: nullString(item.CustomServiceName),
+				Notes:             sql.NullString{String: item.Notes, Valid: item.Notes != ""},
+				Price:             item.Price,
+			})
+			if err != nil {
+				return err
+			}
+		}
+
+		// Save customer notes in the same transaction.
+		for _, item := range orderItemData {
+			if item.IsSaveCustomerNotes {
+				if err := o.saveCustomerOrderNotes(ctx, q, item.Notes, existingOrder.CustomerID); err != nil {
+					return err
+				}
+			}
+		}
+
+		return nil
+	})
+
 }

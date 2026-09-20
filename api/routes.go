@@ -33,7 +33,9 @@ func (s *ApiServer) SetupRoutes() {
 	authRoutes.POST("/order/create", h.Order.CreateOrderHandler)
 	authRoutes.GET("/order/list", h.Order.ListOrdersHandler)
 	authRoutes.GET("/order/detail/:order_id", h.Order.GetDetailOrderHandler)
-	authRoutes.PUT("/order/update", h.Order.UpdateOrderHandler)
+
+	authRoutes.PUT("/order/update/:order_id", h.Order.UpdateOrderHandler)
+	authRoutes.PUT("/order/update/:order_id/items", h.Order.UpdateOrderItemsHandler)
 	authRoutes.PUT("/order/status/update", h.Order.UpdateOrderStatusHandler)
 	authRoutes.DELETE("/order/delete", h.Order.DeleteOrderHandler)
 

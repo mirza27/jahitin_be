@@ -59,6 +59,15 @@ func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams
 	return i, err
 }
 
+const deleteOrderItemByOrderID = `-- name: DeleteOrderItemByOrderID :exec
+DELETE FROM order_items WHERE order_id = $1
+`
+
+func (q *Queries) DeleteOrderItemByOrderID(ctx context.Context, orderID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteOrderItemByOrderID, orderID)
+	return err
+}
+
 const listOrderItemsByMultipleOrderIDs = `-- name: ListOrderItemsByMultipleOrderIDs :many
 SELECT
     oi.id,

@@ -49,3 +49,6 @@ INSERT INTO order_items (
 ) VALUES
     ($1, $2, $3, $4, $5, $6, $7)
 RETURNING *;
+
+-- name: DeleteOrderItemByOrderID :exec
+DELETE FROM order_items WHERE order_id = $1;
