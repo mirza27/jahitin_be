@@ -21,10 +21,8 @@ func NewOrderHandler(store db.Store, orderService service.OrderService) *OrderHa
 }
 
 type CreateCustomerOrderDetailRequest struct {
-	CustomerID    *int64 `json:"customer_id" binding:"required_if=IsNewCustomer false"`
 	CustomerName  string `json:"customer_name" binding:"required_if=IsNewCustomer true"`
 	CustomerPhone string `json:"customer_phone" binding:"required_if=IsNewCustomer true"`
-	IsNewCustomer *bool  `json:"is_new_customer" binding:"required"`
 }
 
 type CreateOrderItemsDetailRequest struct {
@@ -94,12 +92,8 @@ func (h *OrderHandler) CreateOrderHandler(c *gin.Context) {
 	}
 
 	cInput := service.CustomerInput{
-		IsNewCustomer: *req.Customer.IsNewCustomer, // get bool val
-		Name:          req.Customer.CustomerName,
-		Phone:         req.Customer.CustomerPhone,
-	}
-	if req.Customer.CustomerID != nil {
-		cInput.CustomerID = *req.Customer.CustomerID
+		Name:  req.Customer.CustomerName,
+		Phone: req.Customer.CustomerPhone,
 	}
 
 	valid, err := h.service.CreateUserOrder(c.Request.Context(), userID, oInput, cInput)

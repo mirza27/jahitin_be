@@ -16,13 +16,16 @@ type ClothesCategory struct {
 }
 
 type Customer struct {
-	ID        int64          `json:"id"`
-	UserID    int64          `json:"user_id"`
-	Name      string         `json:"name"`
-	Phone     sql.NullString `json:"phone"`
-	Notes     sql.NullString `json:"notes"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	CreatedAt time.Time      `json:"created_at"`
+	ID             int64          `json:"id"`
+	UserID         int64          `json:"user_id"`
+	Name           string         `json:"name"`
+	Phone          sql.NullString `json:"phone"`
+	Notes          sql.NullString `json:"notes"`
+	UpdatedAt      time.Time      `json:"updated_at"`
+	CreatedAt      time.Time      `json:"created_at"`
+	ContactKey     sql.NullString `json:"contact_key"`
+	CountryCode    sql.NullString `json:"country_code"`
+	FormattedPhone sql.NullString `json:"formatted_phone"`
 }
 
 type NotificationLog struct {

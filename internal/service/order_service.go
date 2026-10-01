@@ -7,6 +7,8 @@ import (
 	"fmt"
 	db "jahitin_be/database/repository"
 	"time"
+
+	"github.com/nyaruka/phonenumbers"
 )
 
 type OrderService interface {
@@ -40,50 +42,19 @@ type CreateUserOrderInput struct {
 }
 
 type CustomerInput struct {
-	IsNewCustomer bool
-	CustomerID    int64
-	Name          string
-	Phone         string
+	Name  string
+	Phone string
 }
 
 func (o *orderService) CreateUserOrder(ctx context.Context, user_id int64, o_data CreateUserOrderInput, c_data CustomerInput) (bool, error) {
 	err := o.store.ExecTx(ctx, func(q *db.Queries) error {
 
-		var customerID int64
-
-		// if new customer
-		if c_data.IsNewCustomer {
-			cParam := db.CreateCustomerParams{
-				Name:   c_data.Name,
-				UserID: user_id,
-				Phone:  sql.NullString{String: c_data.Phone, Valid: c_data.Phone != ""},
-				Notes:  sql.NullString{String: "", Valid: false},
-			}
-
-			customer, err := q.CreateCustomer(ctx, cParam)
-			if err != nil {
-				return err
-			}
-
-			customerID = customer.ID // replace
+		var customerID, err = o.resolveCustomer(ctx, q, user_id, c_data)
+		if err != nil {
+			return err
 		}
 
-		// check if this user's customer
-		if !c_data.IsNewCustomer {
-			customer, err := o.store.GetCustomerByID(ctx, c_data.CustomerID)
-			if err != nil {
-				if err == sql.ErrNoRows {
-					return errors.New("customer not found")
-				}
-
-			}
-
-			if customer.UserID != user_id {
-				return errors.New("customer does not belong to user")
-			}
-
-			customerID = customer.ID
-		}
+		fmt.Println("customer ID	", customerID)
 
 		oParam := db.CreateOrderParams{
 			UserID:     user_id,
@@ -141,6 +112,45 @@ func (o *orderService) CreateUserOrder(ctx context.Context, user_id int64, o_dat
 	}
 
 	return true, nil
+}
+
+func (o *orderService) resolveCustomer(ctx context.Context, q db.Querier, user_id int64, customerData CustomerInput) (customerID int64, err error) {
+
+	formattedPhone, err := phonenumbers.Parse(customerData.Phone, "ID")
+	if err != nil {
+		return 0, err
+	}
+	formattedPhoneE164 := phonenumbers.Format(formattedPhone, phonenumbers.E164)
+
+	customer, _ := o.store.GetCustomerByUserIDAndContactKey(ctx, db.GetCustomerByUserIDAndContactKeyParams{
+		UserID:         user_id,
+		FormattedPhone: sql.NullString{String: formattedPhoneE164, Valid: true},
+	})
+
+	fmt.Println("customer: ", customer)
+
+	if customer.ID != 0 {
+		return customer.ID, nil
+
+	} else {
+		// create customer
+		cParam := db.CreateCustomerParams{
+			Name:           customerData.Name,
+			UserID:         user_id,
+			FormattedPhone: sql.NullString{String: formattedPhoneE164, Valid: true},
+			CountryCode:    sql.NullString{String: fmt.Sprintf("+%d", formattedPhone.GetCountryCode()), Valid: true},
+			Phone:          sql.NullString{String: customerData.Phone, Valid: customerData.Phone != ""},
+			Notes:          sql.NullString{String: "", Valid: false},
+		}
+
+		customer, err := q.CreateCustomer(ctx, cParam)
+		if err != nil {
+			return 0, err
+		}
+
+		return customer.ID, nil
+	}
+
 }
 
 func (o *orderService) saveCustomerOrderNotes(ctx context.Context, q db.Querier, notes string, customer_id int64) error {

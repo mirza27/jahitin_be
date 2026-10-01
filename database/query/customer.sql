@@ -14,11 +14,15 @@ LIMIT $3 OFFSET $4;
 
 -- name: CreateCustomer :one
 INSERT INTO customers (
-    name, user_id, phone, notes
+    name, user_id, phone, notes, contact_key, country_code, formatted_phone
 ) VALUES (
-    $1, $2, $3, $4
+    $1, $2, $3, $4, $5, $6, $7
 ) RETURNING *;
 
+-- name: GetCustomerByUserIDAndContactKey :one
+SELECT * FROM customers
+WHERE user_id = $1 AND formatted_phone = $2
+LIMIT 1;
 
 -- name: UpdateCustomerNotes :one
 UPDATE customers

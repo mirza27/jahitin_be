@@ -12,17 +12,20 @@ import (
 
 const createCustomer = `-- name: CreateCustomer :one
 INSERT INTO customers (
-    name, user_id, phone, notes
+    name, user_id, phone, notes, contact_key, country_code, formatted_phone
 ) VALUES (
-    $1, $2, $3, $4
-) RETURNING id, user_id, name, phone, notes, updated_at, created_at
+    $1, $2, $3, $4, $5, $6, $7
+) RETURNING id, user_id, name, phone, notes, updated_at, created_at, contact_key, country_code, formatted_phone
 `
 
 type CreateCustomerParams struct {
-	Name   string         `json:"name"`
-	UserID int64          `json:"user_id"`
-	Phone  sql.NullString `json:"phone"`
-	Notes  sql.NullString `json:"notes"`
+	Name           string         `json:"name"`
+	UserID         int64          `json:"user_id"`
+	Phone          sql.NullString `json:"phone"`
+	Notes          sql.NullString `json:"notes"`
+	ContactKey     sql.NullString `json:"contact_key"`
+	CountryCode    sql.NullString `json:"country_code"`
+	FormattedPhone sql.NullString `json:"formatted_phone"`
 }
 
 func (q *Queries) CreateCustomer(ctx context.Context, arg CreateCustomerParams) (Customer, error) {
@@ -31,6 +34,9 @@ func (q *Queries) CreateCustomer(ctx context.Context, arg CreateCustomerParams) 
 		arg.UserID,
 		arg.Phone,
 		arg.Notes,
+		arg.ContactKey,
+		arg.CountryCode,
+		arg.FormattedPhone,
 	)
 	var i Customer
 	err := row.Scan(
@@ -41,12 +47,15 @@ func (q *Queries) CreateCustomer(ctx context.Context, arg CreateCustomerParams) 
 		&i.Notes,
 		&i.UpdatedAt,
 		&i.CreatedAt,
+		&i.ContactKey,
+		&i.CountryCode,
+		&i.FormattedPhone,
 	)
 	return i, err
 }
 
 const getCustomerByID = `-- name: GetCustomerByID :one
-SELECT id, user_id, name, phone, notes, updated_at, created_at FROM customers
+SELECT id, user_id, name, phone, notes, updated_at, created_at, contact_key, country_code, formatted_phone FROM customers
 WHERE id = $1
 `
 
@@ -61,12 +70,44 @@ func (q *Queries) GetCustomerByID(ctx context.Context, id int64) (Customer, erro
 		&i.Notes,
 		&i.UpdatedAt,
 		&i.CreatedAt,
+		&i.ContactKey,
+		&i.CountryCode,
+		&i.FormattedPhone,
+	)
+	return i, err
+}
+
+const getCustomerByUserIDAndContactKey = `-- name: GetCustomerByUserIDAndContactKey :one
+SELECT id, user_id, name, phone, notes, updated_at, created_at, contact_key, country_code, formatted_phone FROM customers
+WHERE user_id = $1 AND formatted_phone = $2
+LIMIT 1
+`
+
+type GetCustomerByUserIDAndContactKeyParams struct {
+	UserID         int64          `json:"user_id"`
+	FormattedPhone sql.NullString `json:"formatted_phone"`
+}
+
+func (q *Queries) GetCustomerByUserIDAndContactKey(ctx context.Context, arg GetCustomerByUserIDAndContactKeyParams) (Customer, error) {
+	row := q.db.QueryRowContext(ctx, getCustomerByUserIDAndContactKey, arg.UserID, arg.FormattedPhone)
+	var i Customer
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.Phone,
+		&i.Notes,
+		&i.UpdatedAt,
+		&i.CreatedAt,
+		&i.ContactKey,
+		&i.CountryCode,
+		&i.FormattedPhone,
 	)
 	return i, err
 }
 
 const listCustomersByUserID = `-- name: ListCustomersByUserID :many
-SELECT id, user_id, name, phone, notes, updated_at, created_at FROM customers
+SELECT id, user_id, name, phone, notes, updated_at, created_at, contact_key, country_code, formatted_phone FROM customers
 WHERE user_id = $1
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3
@@ -95,6 +136,9 @@ func (q *Queries) ListCustomersByUserID(ctx context.Context, arg ListCustomersBy
 			&i.Notes,
 			&i.UpdatedAt,
 			&i.CreatedAt,
+			&i.ContactKey,
+			&i.CountryCode,
+			&i.FormattedPhone,
 		); err != nil {
 			return nil, err
 		}
@@ -110,7 +154,7 @@ func (q *Queries) ListCustomersByUserID(ctx context.Context, arg ListCustomersBy
 }
 
 const listCustomersByUserIDAndName = `-- name: ListCustomersByUserIDAndName :many
-SELECT id, user_id, name, phone, notes, updated_at, created_at FROM customers
+SELECT id, user_id, name, phone, notes, updated_at, created_at, contact_key, country_code, formatted_phone FROM customers
 WHERE user_id = $1 AND name ILIKE '%' || $2 || '%'
 ORDER BY created_at DESC
 LIMIT $3 OFFSET $4
@@ -145,6 +189,9 @@ func (q *Queries) ListCustomersByUserIDAndName(ctx context.Context, arg ListCust
 			&i.Notes,
 			&i.UpdatedAt,
 			&i.CreatedAt,
+			&i.ContactKey,
+			&i.CountryCode,
+			&i.FormattedPhone,
 		); err != nil {
 			return nil, err
 		}
@@ -163,7 +210,7 @@ const updateCustomerNotes = `-- name: UpdateCustomerNotes :one
 UPDATE customers
 SET notes = $2, updated_at = NOW()
 WHERE id = $1
-RETURNING id, user_id, name, phone, notes, updated_at, created_at
+RETURNING id, user_id, name, phone, notes, updated_at, created_at, contact_key, country_code, formatted_phone
 `
 
 type UpdateCustomerNotesParams struct {
@@ -182,6 +229,9 @@ func (q *Queries) UpdateCustomerNotes(ctx context.Context, arg UpdateCustomerNot
 		&i.Notes,
 		&i.UpdatedAt,
 		&i.CreatedAt,
+		&i.ContactKey,
+		&i.CountryCode,
+		&i.FormattedPhone,
 	)
 	return i, err
 }
