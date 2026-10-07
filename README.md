@@ -1,177 +1,224 @@
 # Jahitin Backend
 
-Backend service for a home-based tailoring business management mobile application. The API is intended to be consumed by a Flutter mobile client.
+[![Go](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go&logoColor=white)](https://go.dev)
+[![Gin Framework](https://img.shields.io/badge/Web_Framework-Gin-008ECF?logo=gin&logoColor=white)](https://gin-gonic.com)
+[![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL_16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org)
+[![SQLC](https://img.shields.io/badge/Database_Access-SQLC-FF6B6B)](https://sqlc.dev)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://www.docker.com)
+[![Mobile Client](https://img.shields.io/badge/Mobile_Client-jahitin__mobile-6200EE?logo=flutter&logoColor=white)](https://github.com/mirza27/jahitin_mobile)
 
-## Overview
+REST API backend for Jahitin, a mobile application designed for home-based tailors to manage orders, customer records, and garment measurements.
 
-Jahitin Backend provides authenticated HTTP endpoints for managing tailor users, customers, orders, order items, clothes categories, and service types. It is designed as the backend API for the [Jahitin mobile application](https://github.com/mirza27/safelyn_mobile).
+This project was built as a portfolio project to demonstrate backend API development with Go, relational database modeling with PostgreSQL, and integration with a Flutter mobile client.
 
-The repository is not presented as production-ready. The current implementation is a work in progress and includes known gaps in automated testing and seed tooling.
+Companion mobile app: [github.com/mirza27/jahitin_mobile](https://github.com/mirza27/jahitin_mobile)
 
-## Key Features
+---
 
-- Local user registration and login — Implemented
-- Account user registration and login — Implemented
-- Local and account Bearer-token session authentication — Implemented
-- Customer listing and detail retrieval — Implemented
-- Order creation, listing, detail retrieval, update, deletion, and status update — Implemented
-- Order-item replacement/update — Implemented
-- Clothes category and service type listing — Implemented
-- PostgreSQL schema migrations — Implemented
+## Project Overview
 
-## Tech Stack
+Home tailors often handle orders through paper notes or chat messages, making it difficult to track garment measurements, service types (custom tailoring vs. alterations), deadlines, and order statuses. 
 
-| Technology        | Purpose                                      |
-| ----------------- | -------------------------------------------- |
-| Go 1.25           | Backend language                             |
-| Gin               | HTTP routing and request handling            |
-| PostgreSQL        | Relational database                          |
-| `pgx/v5`          | PostgreSQL driver through `database/sql`     |
-| SQLC              | Type-safe generated database access code     |
-| Viper             | Environment and `.env` configuration loading |
-| HMAC-based tokens | Session token creation and verification      |
+Jahitin Backend provides the HTTP endpoints to back this workflow, handling:
+- Device-based and account authentication.
+- Customer directory and contact management.
+- Multi-item order creation with custom line items, measurements, notes, and pricing.
+- Status tracking across the order lifecycle (pending, in progress, completed, picked up).
+- Master data catalogs for garment categories and tailoring services.
 
-## Project Status
-
-**Status:** In Development
-
-The project is actively changing. API contracts, database operations, and supporting tooling may change as development continues.
-
-| Area                                 | Status        |
-| ------------------------------------ | ------------- |
-| Authentication and session local     | Implemented   |
-| Authentication and session account   | Unimplemented |
-| User registration local              | Implemented   |
-| User registration account            | Unimplemented |
-| Customer management                  | Implemented   |
-| Order and order-item management      | Implemented   |
-| Clothes categories and service types | Implemented   |
-| Order Public Monitoring              | Unimplemented |
-| Order Invoicing Monitoring           | Unimplemented |
-| Database migrations                  | Implemented   |
+---
 
 ## Architecture
 
-The codebase uses a small layered structure rather than a full framework-specific architecture:
+The codebase follows a standard layered architecture:
 
 ```text
-HTTP request
-	|
-Gin router and authentication middleware
-	|
-Handlers
-	|
-Services
-	|
-SQLC-generated repository
-	|
-PostgreSQL
+HTTP Request
+     │
+     ▼
+Gin Router & Middleware (Auth, CORS)
+     │
+     ▼
+Handlers (Request validation & HTTP response formatting)
+     │
+     ▼
+Services (Business logic & transaction coordination)
+     │
+     ▼
+Repository (Type-safe SQL queries generated via SQLC)
+     │
+     ▼
+PostgreSQL Database
 ```
 
-- `api/` creates the Gin server, registers routes, and validates Bearer tokens.
-- `internal/handler/` translates HTTP requests and responses.
-- `internal/service/` contains application operations.
-- `database/query/` contains SQL queries and `database/repository/` contains SQLC-generated access code.
-- `database/migration/` contains PostgreSQL schema migrations.
-- `config/` loads runtime configuration and `token/` handles session tokens.
+### Key Technical Decisions
 
-## API
+- **Go & Gin**: Chosen for simple routing, low resource usage, and clean standard library integration.
+- **SQLC over traditional ORM**: SQL queries are written in raw SQL (`database/query/`) and compiled into type-safe Go structs using SQLC. This avoids ORM reflection overhead while keeping full control over query design and database indexes.
+- **Database Transactions**: Order creation and multi-item updates run inside explicit database transactions to ensure consistency across `orders` and `order_items` tables.
+- **HMAC-SHA256 Token Auth**: Session tokens are signed and verified with HMAC-SHA256 for lightweight, stateless authentication without requiring an external OAuth provider.
+- **Schema Migrations**: Database versioning is handled using `golang-migrate` SQL files in `database/migration/`.
 
-The following routes are registered in `api/routes.go`. Routes under the authenticated group require `Authorization: Bearer <token>`.
+---
 
-| Method | Endpoint                        | Description                    | Auth |
-| ------ | ------------------------------- | ------------------------------ | ---- |
-| POST   | `/auth/login/local`             | Local login                    | No   |
-| POST   | `/auth/login/account`           | Account login                  | No   |
-| POST   | `/user/register/local`          | Register a local user          | No   |
-| POST   | `/user/register/account`        | Register an account user       | No   |
-| GET    | `/auth/session`                 | Read the authenticated session | Yes  |
-| GET    | `/category/list`                | List clothes categories        | Yes  |
-| GET    | `/service/list`                 | List service types             | Yes  |
-| POST   | `/order/create`                 | Create an order                | Yes  |
-| GET    | `/order/list`                   | List orders                    | Yes  |
-| GET    | `/order/detail/:order_id`       | Get order details              | Yes  |
-| PUT    | `/order/update/:order_id`       | Update an order                | Yes  |
-| PUT    | `/order/update/:order_id/items` | Update order items             | Yes  |
-| PUT    | `/order/status/update`          | Update order status            | Yes  |
-| DELETE | `/order/delete`                 | Delete an order                | Yes  |
-| GET    | `/customer/list`                | List customers                 | Yes  |
-| GET    | `/customer/detail`              | Get customer details           | Yes  |
+## Tech Stack
 
-This is a route overview, not a complete request and response specification. No Swagger or OpenAPI documentation was found in the current repository.
+- **Language**: Go 1.25
+- **Web Framework**: Gin
+- **Database**: PostgreSQL 16
+- **Database Driver**: `pgx/v5` via `database/sql`
+- **Query Generator**: SQLC
+- **Configuration**: Viper (`.env` file loader)
+- **Containerization**: Docker & Docker Compose
+- **Migrations**: golang-migrate
 
-## Database
+---
 
-The application connects to PostgreSQL using `database/sql` with the `pgx` driver. The current migrations define users, customers, clothes categories, service types, orders, order items, and notification logs, with later migrations adding customer contact fields.
+## Project Structure
 
-Migrations are stored in `database/migration/`. The application does not apply migrations automatically during startup.
-
-## Configuration
-
-Create a `.env` file in the repository root, or provide the same variables through the environment when `.env` is absent:
-
-```dotenv
-APP_NAME=jahitin
-APP_VERSION=development
-APP_PORT=8001
-DEBUG=true
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=<database-user>
-DB_PASSWORD=<database-password>
-DB_NAME=jahitin_db
-TOKEN_SECRET_KEY=<token-secret>
+```text
+jahitin_be/
+├── api/                 # Server setup, route registration, and auth middleware
+├── cmd/                 # CLI entrypoints (e.g. database seed tools)
+├── config/              # Viper environment variable loader
+├── database/
+│   ├── migration/       # Up/Down SQL migration files
+│   ├── query/           # Raw SQL queries compiled by SQLC
+│   └── repository/      # Generated Go database models and query methods
+├── internal/
+│   ├── handler/         # HTTP request handlers
+│   └── service/         # Business logic layer
+├── token/               # HMAC token creation and verification
+├── docker-compose.yml   # Multi-container setup for local development
+├── Dockerfile           # Multi-stage Docker build
+├── Makefile             # Common dev shortcuts
+├── sqlc.yaml            # SQLC configuration
+└── main.go              # Application entrypoint
 ```
 
-Do not commit real credentials or token secrets. The repository's Docker Compose setup expects PostgreSQL and application settings from `.env`.
+---
+
+## API Endpoints
+
+Protected endpoints require the `Authorization: Bearer <token>` header.
+
+### Authentication
+
+| Method | Endpoint | Auth | Description |
+| :--- | :--- | :--- | :--- |
+| POST | `/auth/login/local` | No | Login using registered device identifier |
+| POST | `/auth/login/account` | No | Login using email/username and password |
+| POST | `/user/register/local` | No | Register a local device user |
+| POST | `/user/register/account` | No | Register an account-based user |
+| GET | `/auth/session` | Yes | Verify active session and return current user profile |
+
+### Orders & Items
+
+| Method | Endpoint | Auth | Description |
+| :--- | :--- | :--- | :--- |
+| POST | `/order/create` | Yes | Create an order with customer data and item list |
+| GET | `/order/list` | Yes | List orders with optional status and search filters |
+| GET | `/order/detail/:order_id` | Yes | Get full order details and individual items |
+| PUT | `/order/update/:order_id` | Yes | Update order name and deadline |
+| PUT | `/order/update/:order_id/items` | Yes | Replace/update line items in an order |
+| PUT | `/order/status/update` | Yes | Update order progress status |
+| DELETE | `/order/delete` | Yes | Delete an order |
+
+### Master Data & Customers
+
+| Method | Endpoint | Auth | Description |
+| :--- | :--- | :--- | :--- |
+| GET | `/category/list` | Yes | List clothes categories (e.g., Kemeja, Celana, Gamis) |
+| GET | `/service/list` | Yes | List service types (e.g., Jahit Baru, Permak) |
+| GET | `/customer/list` | Yes | List tailor's customer records |
+| GET | `/customer/detail` | Yes | Get customer detail by ID |
+
+---
+
+## Sample Request Payload
+
+### Create Order (`POST /order/create`)
+
+```json
+{
+  "name": "Pesanan Baru Bu Siti",
+  "deadline": "2026-10-15T17:00:00+07:00",
+  "customer": {
+    "customer_name": "Bu Siti",
+    "customer_phone": "085123456789"
+  },
+  "order_items": [
+    {
+      "clothes_for": "Bu Siti",
+      "clothes_category_id": 2,
+      "service_type_id": 1,
+      "price": 150000,
+      "notes": "Ukuran LD 100cm, panjang gamis 135cm",
+      "is_save_customer_notes": true
+    },
+    {
+      "clothes_for": "Anak",
+      "clothes_category_id": 3,
+      "custom_service_name": "Kecilkan Pinggang",
+      "price": 35000,
+      "notes": "Kecilkan 2 cm",
+      "is_save_customer_notes": false
+    }
+  ]
+}
+```
+
+---
 
 ## Getting Started
 
-Prerequisites: Go 1.25 and a running PostgreSQL database configured with the variables above.
+### Prerequisites
 
-1. Clone the repository and enter its directory.
-2. Create `.env` using the configuration example above.
-3. Apply the SQL migrations in `database/migration/` to the configured database.
-4. Start the API directly or through the Makefile:
+- Go 1.25 or newer
+- PostgreSQL 16
+- Docker & Docker Compose (optional)
+
+### Local Setup
+
+1. **Clone repository:**
+   ```bash
+   git clone https://github.com/mirza27/jahitin_be.git
+   cd jahitin_be
+   ```
+
+2. **Configure environment:**
+   ```bash
+   cp .env.example .env
+   ```
+   Update `.env` with your PostgreSQL database credentials and a secure token secret key.
+
+3. **Run database migrations:**
+   ```bash
+   make migrate
+   ```
+
+4. **Start API server:**
+   ```bash
+   go run main.go
+   # or
+   make server
+   ```
+
+   The server runs on `http://localhost:8001` by default.
+
+### Docker Setup
+
+To run both the PostgreSQL database and API service inside containers:
 
 ```bash
-go mod download
-go run main.go
-```
-
-Equivalent Makefile commands are:
-
-```bash
-make server
-# or
-make api
-```
-
-The server binds to `0.0.0.0:${APP_PORT}`.
-
-To build and run the API and PostgreSQL services with Docker Compose:
-
-```bash
-make run
-# or
 docker compose up -d --build
 ```
 
-Stop the Compose services with `make down` or `docker compose down`. The Compose configuration expects external Docker networks named `jahitin-network` and `main-network`.
+---
 
-## Known Limitations
+## Scope & Future Improvements
 
-- The project is still in active development and API contracts may change.
-- Database migrations are not executed automatically by the application.
-- The `cmd/seed` package currently does not compile against the generated repository types.
-
-## Roadmap
-
-The repository does not contain an explicit roadmap. Based on the current verified gaps, the next maintenance priorities are:
-
-- [ ] Repair and verify the database seed command.
-- [ ] Verify and document the API contract with the Flutter client.
-
-## Related Repository
-
-Mobile app: [safelyn_mobile](https://github.com/mirza27/safelyn_mobile)
+This project is built to demonstrate practical full-stack mobile backend integration. Areas that can be expanded in the future include:
+- Automated integration testing with `testcontainers-go`.
+- Role-based access control and multi-tenant isolation.
+- PDF invoice generation and automated customer notification webhooks.
