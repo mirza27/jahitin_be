@@ -19,7 +19,7 @@ INSERT INTO customers (
     $1, $2, $3, $4, $5, $6, $7
 ) RETURNING *;
 
--- name: GetCustomerByUserIDAndContactKey :one
+-- name: GetCustomerByUserIDAndPhone :one
 SELECT * FROM customers
 WHERE user_id = $1 AND formatted_phone = $2
 LIMIT 1;

@@ -77,19 +77,19 @@ func (q *Queries) GetCustomerByID(ctx context.Context, id int64) (Customer, erro
 	return i, err
 }
 
-const getCustomerByUserIDAndContactKey = `-- name: GetCustomerByUserIDAndContactKey :one
+const getCustomerByUserIDAndPhone = `-- name: GetCustomerByUserIDAndPhone :one
 SELECT id, user_id, name, phone, notes, updated_at, created_at, contact_key, country_code, formatted_phone FROM customers
 WHERE user_id = $1 AND formatted_phone = $2
 LIMIT 1
 `
 
-type GetCustomerByUserIDAndContactKeyParams struct {
+type GetCustomerByUserIDAndPhoneParams struct {
 	UserID         int64          `json:"user_id"`
 	FormattedPhone sql.NullString `json:"formatted_phone"`
 }
 
-func (q *Queries) GetCustomerByUserIDAndContactKey(ctx context.Context, arg GetCustomerByUserIDAndContactKeyParams) (Customer, error) {
-	row := q.db.QueryRowContext(ctx, getCustomerByUserIDAndContactKey, arg.UserID, arg.FormattedPhone)
+func (q *Queries) GetCustomerByUserIDAndPhone(ctx context.Context, arg GetCustomerByUserIDAndPhoneParams) (Customer, error) {
+	row := q.db.QueryRowContext(ctx, getCustomerByUserIDAndPhone, arg.UserID, arg.FormattedPhone)
 	var i Customer
 	err := row.Scan(
 		&i.ID,

@@ -21,8 +21,8 @@ func NewOrderHandler(store db.Store, orderService service.OrderService) *OrderHa
 }
 
 type CreateCustomerOrderDetailRequest struct {
-	CustomerName  string `json:"customer_name" binding:"required_if=IsNewCustomer true"`
-	CustomerPhone string `json:"customer_phone" binding:"required_if=IsNewCustomer true"`
+	CustomerName  string `json:"customer_name" binding:"required"`
+	CustomerPhone string `json:"customer_phone" binding:"required"`
 }
 
 type CreateOrderItemsDetailRequest struct {

@@ -18,7 +18,7 @@ type Querier interface {
 	DeleteOrderItemByOrderID(ctx context.Context, orderID int64) error
 	FinishOrderStatus(ctx context.Context, id int64) (Order, error)
 	GetCustomerByID(ctx context.Context, id int64) (Customer, error)
-	GetCustomerByUserIDAndContactKey(ctx context.Context, arg GetCustomerByUserIDAndContactKeyParams) (Customer, error)
+	GetCustomerByUserIDAndPhone(ctx context.Context, arg GetCustomerByUserIDAndPhoneParams) (Customer, error)
 	GetOrderDetailsByOrderID(ctx context.Context, id int64) (GetOrderDetailsByOrderIDRow, error)
 	GetUserByDeviceID(ctx context.Context, deviceID sql.NullString) (User, error)
 	GetUserByID(ctx context.Context, id int64) (User, error)

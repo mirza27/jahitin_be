@@ -76,13 +76,6 @@ func (o *orderService) CreateUserOrder(ctx context.Context, user_id int64, o_dat
 				return errors.New("custom service name must be provided if service type ID is nil")
 			}
 
-			// serviceName := sql.NullString{Valid: false}
-			// serviceTypeID := sql.NullInt64{Int64: item.ServiceTypeID, Valid: item.ServiceTypeID != 0}
-			// if item.CustomServiceName != "" {
-			// 	serviceName = sql.NullString{String: item.CustomServiceName, Valid: true}
-			// 	serviceTypeID = sql.NullInt64{Valid: false}
-			// }
-
 			oiParam := db.CreateOrderItemParams{
 				OrderID:           order.ID,
 				CategoryID:        nullInt64(item.ClothesCategoryID),
@@ -114,6 +107,7 @@ func (o *orderService) CreateUserOrder(ctx context.Context, user_id int64, o_dat
 	return true, nil
 }
 
+// get customer by phone number, if not found, create new customer
 func (o *orderService) resolveCustomer(ctx context.Context, q db.Querier, user_id int64, customerData CustomerInput) (customerID int64, err error) {
 
 	formattedPhone, err := phonenumbers.Parse(customerData.Phone, "ID")
@@ -122,12 +116,10 @@ func (o *orderService) resolveCustomer(ctx context.Context, q db.Querier, user_i
 	}
 	formattedPhoneE164 := phonenumbers.Format(formattedPhone, phonenumbers.E164)
 
-	customer, _ := o.store.GetCustomerByUserIDAndContactKey(ctx, db.GetCustomerByUserIDAndContactKeyParams{
+	customer, _ := o.store.GetCustomerByUserIDAndPhone(ctx, db.GetCustomerByUserIDAndPhoneParams{
 		UserID:         user_id,
 		FormattedPhone: sql.NullString{String: formattedPhoneE164, Valid: true},
 	})
-
-	fmt.Println("customer: ", customer)
 
 	if customer.ID != 0 {
 		return customer.ID, nil

@@ -42,6 +42,7 @@ func (s *ApiServer) SetupRoutes() {
 	// customers
 	authRoutes.GET("/customer/list", h.Customer.ListCustomersHandler)
 	authRoutes.GET("/customer/detail", h.Customer.GetCustomerDetailHandler)
+	authRoutes.POST("/customer/phone-search", h.Customer.GetDetailCustomerByPhoneHandler)
 
 	s.router = router
 }

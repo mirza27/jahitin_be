@@ -98,5 +98,29 @@ func (h *CustomerHandler) GetCustomerDetailHandler(c *gin.Context) {
 }
 
 func (h *CustomerHandler) GetDetailCustomer(c *gin.Context) {
+	c.JSON(http.StatusNotImplemented, gin.H{"message": "not implemented"})
+}
+
+type GetCustomerByPhoneRequest struct {
+	Phone string `json:"phone" binding:"required"`
+}
+
+func (h *CustomerHandler) GetDetailCustomerByPhoneHandler(c *gin.Context) {
+	var req GetCustomerByPhoneRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	authPayload := c.MustGet("authorization_payload").(*token.Payload)
+	userID := authPayload.UserID
+
+	customer, err := h.service.GetUserCustomerByPhone(c.Request.Context(), userID, req.Phone)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "failed to get customer by phone", "details": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": customer})
 
 }
